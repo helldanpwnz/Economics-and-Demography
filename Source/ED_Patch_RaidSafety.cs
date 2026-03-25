@@ -15,6 +15,7 @@ namespace EconomicsDemography
     [HarmonyPatch(typeof(IncidentWorker_Raid), "TryExecuteWorker")]
     public static class Patch_RaidSafety
     {
+        [HarmonyPriority(1000)]
         [HarmonyPrefix]
         static bool Prefix(IncidentParms parms)
         {

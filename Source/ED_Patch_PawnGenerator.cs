@@ -15,7 +15,7 @@ namespace EconomicsDemography
     [HarmonyPatch(typeof(PawnGenerator), "GeneratePawn", new Type[] { typeof(PawnGenerationRequest) })]
     public static class Patch_PawnGenerator
     {
-        [HarmonyPriority(Priority.First)] 
+        [HarmonyPriority(1000)] 
         [HarmonyPrefix]
         static bool Prefix(ref PawnGenerationRequest request)
         {
