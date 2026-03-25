@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+  <!-- Main Settings -->
+  <ED_GeneralSettings>=== Общие настройки ===</ED_GeneralSettings>
+  <ED_UpdateInterval>Интервал обновления (часов): {0}</ED_UpdateInterval>
+  <ED_CollapseThreshold>Порог сворачивания поселений: {0}%</ED_CollapseThreshold>
+  <ED_EconomySettings>=== Настройки Экономики ===</ED_EconomySettings>
+  <ED_InflationEnabled>Включить ГЛОБАЛЬНУЮ инфляцию</ED_InflationEnabled>
+  <ED_InflationDesc>Если включено — все цены в мире будут расти или падать в зависимости от общего объема серебра. Если выключено — цены всё равно будут меняться, но только из-за спроса и предложения (локальных коэффициентов).</ED_InflationDesc>
+  <ED_GoldStandard>Жесткий Золотой стандарт</ED_GoldStandard>
+  <ED_GoldStandardDesc>Останавливает печать нового серебра фракциями и замораживает инфляционный базис. Экономика превращается в игру с нулевой суммой: если игрок заберет всё серебро из мира, фракции будут жить в вечной дефляции и перейдут на натуральный обмен.</ED_GoldStandardDesc>
+  <ED_PriceUpdateFactor>Скорость изменения цен (инерция): {0}%</ED_PriceUpdateFactor>
+  <ED_PriceUpdateFactorDesc>Насколько быстро цены подстраиваются под избыток или дефицит за один цикл обновления. 100% = мгновенно, 1% = очень плавно.</ED_PriceUpdateFactorDesc>
+  <ED_InflationUpdateFactor>Скорость инфляции: {0}%</ED_InflationUpdateFactor>
+  <ED_InflationUpdateFactorDesc>Насколько быстро глобальная инфляция подстраивается под изменение общего объема серебра в мире за один цикл. Помогает избежать резких скачков цен при крупных сделках игрока.</ED_InflationUpdateFactorDesc>
+  <ED_HomeostasisEfficiency>Скорость гомеостаза: {0}</ED_HomeostasisEfficiency>
+  <ED_HomeostasisDesc>Как быстро базовая экономика впитывает новые объемы серебра (индексация ВВП). Чем ниже значение, тем дольше мир будет восстанавливаться после сильных макроэкономических потрясений.</ED_HomeostasisDesc>
+  <ED_CapacitySettings>=== Лимит населения на поселение ===</ED_CapacitySettings>
+  <ED_ExpansionSettings>=== Настройки экспансии ===</ED_ExpansionSettings>
+  <ED_ExpansionThreshold>Порог экспансии: {0}x</ED_ExpansionThreshold>
+  <ED_BirthRates>=== Множители рождаемости ===</ED_BirthRates>
+  <ED_Tech_Animal>Животные</ED_Tech_Animal>
+  <ED_Tech_Neolithic>Неолит</ED_Tech_Neolithic>
+  <ED_Tech_Medieval>Средневековье</ED_Tech_Medieval>
+  <ED_Tech_Industrial>Индустриал</ED_Tech_Industrial>
+  <ED_Tech_Spacer>Космос</ED_Tech_Spacer>
+  <ED_Tech_Ultra>Ультра</ED_Tech_Ultra>
+  <ED_Tech_Archotech>Архотех</ED_Tech_Archotech>
+  <ED_EventMultiplier>Множитель похищений/миграции: {0}x</ED_EventMultiplier>
+  <ED_LifecycleSettings>=== Жизненный цикл (дней) ===</ED_LifecycleSettings>
+  <ED_DaysToAdult>Дней до взросления: {0} (Дети -> Взрослые)</ED_DaysToAdult>
+  <ED_DaysToElder>Дней взрослой жизни: {0} (Взрослые -> Старики)</ED_DaysToElder>
+  <ED_ProductionEff>=== Эффективность производства ===</ED_ProductionEff>
+  <ED_ConsumptionCoeff>=== Коэффициент потребления ===</ED_ConsumptionCoeff>
+  <ED_SystemHeader>=== Система ===</ED_SystemHeader>
+  <ED_EnableLogs>Включить подробные логи</ED_EnableLogs>
+  <ED_EnableLogsDesc>Записывать действия населения в файл FinitePopulation.log и консоль.</ED_EnableLogsDesc>
+  <ED_ResetSettings>Сбросить все настройки</ED_ResetSettings>
+
+  <!-- Demography & Events -->
+  <ED_ExpansionLetterTitle>Экспансия: {0}</ED_ExpansionLetterTitle>
+  <ED_ExpansionLetterText>Благодаря избытку ресурсов и людей ({0}/{1}), фракция {2} основала новое поселение: {3}.\n\nПотрачено ресурсов: {4:F0}</ED_ExpansionLetterText>
+  <ED_DefectionLog>[E&amp;D] Житель покинул {0} из-за низкого уровня жизни ({1:F1} сер/чел) и примкнул к {2}</ED_DefectionLog>
+  <ED_KidnapLog>[E&amp;D] {0} {1} {2} чел. у {3}</ED_KidnapLog>
+  <ED_Kidnapped>похитили</ED_Kidnapped>
+  <ED_Lured>переманили</ED_Lured>
+  <ED_FactionRuinedTitle>Фракция разорена: {0}</ED_FactionRuinedTitle>
+  <ED_FactionRuinedText>Последнее поселение фракции {0} ({1}) заброшено. Оставшиеся {2} чел. не смогли поддерживать порядок и ушли в скитания, став бродягами.</ED_FactionRuinedText>
+  <ED_SettlementAbandonedTitle>Поселение заброшено: {0}</ED_SettlementAbandonedTitle>
+  <ED_SettlementAbandonedText>Фракция {0} оставила {1} из-за нехватки людей. Гарнизон отступил к оставшимся базам, потеряно {2} чел.</ED_SettlementAbandonedText>
+  <ED_RebirthTitle>Возрождение: {0}</ED_RebirthTitle>
+  <ED_RebirthText>Бродяги {0} (Нас.: {1}) нашли подходящее место и основали поселение: {2}.</ED_RebirthText>
+  <ED_TerritoryLossTitle>Потеря территории: {0}</ED_TerritoryLossTitle>
+  <ED_TerritoryLossText>Фракция {0} потеряла поселение в ходе войны. Погибло и попало в плен {1} чел.</ED_TerritoryLossText>
+  <ED_LastBaseLossTitle>Потеря последней базы: {0}</ED_LastBaseLossTitle>
+  <ED_LastBaseLossText>Фракция {0} лишилась последнего поселения. Оставшиеся {1} чел. рассеялись.</ED_LastBaseLossText>
+  
+  <ED_Log_Raid>&lt;color=red&gt;[E&amp;D] НАБЕГ:&lt;/color&gt; {0} украли {1}x {2} у {3}</ED_Log_Raid>
+  <ED_Log_Export>&lt;color=#77ffff&gt;[E&amp;D] ЭКСПОРТ:&lt;/color&gt; {0} ({1}) продал ресурсы {2} за {3} серебра.</ED_Log_Export>
+  <ED_Log_Purchase>&lt;color=#77ffff&gt;[E&amp;D] ЗАКУПКА:&lt;/color&gt; {0} выкупил излишки у дикарей {1} за {2} серебра.</ED_Log_Purchase>
+  <ED_Log_Barter>&lt;color=green&gt;[E&amp;D] БАРТЕР:&lt;/color&gt; {0} &lt;-&gt; {1} ({2} на {3})</ED_Log_Barter>
+  <ED_Log_EconomyInit>[E&amp;D] Экономика инициализирована.</ED_Log_EconomyInit>
+  <ED_Log_InflationReset>[E&amp;D] Точка отсчета инфляции сброшена (обнаружена аномалия от старых сохранений).</ED_Log_InflationReset>
+  <ED_Log_InflationBaselineSet>[E&amp;D] Точка отсчета инфляции установлена: {0} сер.</ED_Log_InflationBaselineSet>
+  <ED_Log_PolicyChange>[E&amp;D] Изменение политики: {0} на {1} дн (Инфляция {2:P0})</ED_Log_PolicyChange>
+  <ED_Tax>НАЛОГ</ED_Tax>
+  <ED_Quiet>ЗАТИШЬЕ</ED_Quiet>
+  
+  <!-- UI Labels -->
+  <ED_UI_Population>Население</ED_UI_Population>
+  <ED_UI_Wealth>Богатство</ED_UI_Wealth>
+  <ED_UI_Bases>Базы</ED_UI_Bases>
+  <ED_UI_Trend>Тренд</ED_UI_Trend>
+  <ED_UI_Tab>Популяция</ED_UI_Tab>
+  <ED_UI_TabDesc>Глобальная статистика населения и экономики мира.</ED_UI_TabDesc>
+  <ED_UI_TabTitle>Демография и Экономика Мира</ED_UI_TabTitle>
+  <ED_UI_ErrorNoData>Ошибка: Данные населения не найдены.</ED_UI_ErrorNoData>
+  <ED_UI_GlobalInflation>Глобальная инфляция: {0}</ED_UI_GlobalInflation>
+  <ED_UI_TechLevelLabel>Тех-уровень: {0}</ED_UI_TechLevelLabel>
+  <ED_UI_TraitLabel>Путь: {0}</ED_UI_TraitLabel>
+  <ED_UI_TotalPop>Всего жителей: {0}</ED_UI_TotalPop>
+  <ED_UI_Adults>Взрослых: {0}</ED_UI_Adults>
+  <ED_UI_Males>Мужчин: {0}</ED_UI_Males>
+  <ED_UI_Females>Женщин: {0}</ED_UI_Females>
+  <ED_UI_Children>Детей: {0}</ED_UI_Children>
+  <ED_UI_Elders>Стариков: {0}</ED_UI_Elders>
+  <ED_UI_Capital>Капитал: {0}</ED_UI_Capital>
+  <ED_UI_Silver>(Серебро: {0})</ED_UI_Silver>
+  <ED_UI_MainStocks>Основные запасы:</ED_UI_MainStocks>
+
+  <ED_Trait_Miner>Шахтеры</ED_Trait_Miner>
+  <ED_Trait_Farmer>Фермеры</ED_Trait_Farmer>
+  <ED_Trait_Medical>Медики</ED_Trait_Medical>
+  <ED_Trait_Technician>Техники</ED_Trait_Technician>
+  <ED_Trait_Tailor>Портные</ED_Trait_Tailor>
+  <ED_Trait_Warrior>Воины</ED_Trait_Warrior>
+  <ED_Trait_Alchemist>Алхимики</ED_Trait_Alchemist>
+  <ED_Trait_Jeweler>Ювелиры</ED_Trait_Jeweler>
+  <ED_Trait_Hunter>Охотники</ED_Trait_Hunter>
+  <ED_Trait_Lumberjack>Лесорубы</ED_Trait_Lumberjack>
+  <ED_Trait_Rancher>Животноводы</ED_Trait_Rancher>
+  <ED_Trait_Fisherman>Рыбаки</ED_Trait_Fisherman>
+  <ED_Trait_Generalist>Универсалы</ED_Trait_Generalist>
+  <ED_Trait_Wholesale>Оптовики</ED_Trait_Wholesale>
+</LanguageData>

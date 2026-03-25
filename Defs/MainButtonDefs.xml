@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <MainButtonDef>
+    <defName>EconomicsDemography_Tab</defName>
+    <label>Population</label>
+    <description>Global population and world economy statistics.</description>
+    <tabWindowClass>EconomicsDemography.MainTabWindow_Population</tabWindowClass>
+    <order>81</order>
+    <iconPath>Icons/UI/ED_Menu</iconPath>
+    <minimized>true</minimized>
+  </MainButtonDef>
+
+</Defs>

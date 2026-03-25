@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Economics &amp; Demography</name>
+  <author>helldan</author>
+  <packageId>helldan.economicsdemography</packageId> <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <description>Economics &amp; Demography - Advanced faction demography, trade and inflation system.</description>
+  
+  <loadAfter>
+    <li>Ludeon.RimWorld</li>
+    <li>Ludeon.RimWorld.Ideology</li> <li>Ludeon.RimWorld.Royalty</li>
+    <li>Ludeon.RimWorld.Biotech</li>
+    <li>Ludeon.RimWorld.Anomaly</li> <li>brrainz.harmony</li> </loadAfter>
+</ModMetaData>

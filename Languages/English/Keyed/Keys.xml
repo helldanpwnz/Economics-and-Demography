@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+  <!-- Main Settings -->
+  <ED_GeneralSettings>=== General Settings ===</ED_GeneralSettings>
+  <ED_UpdateInterval>Update interval (hours): {0}</ED_UpdateInterval>
+  <ED_CollapseThreshold>Settlement collapse threshold: {0}%</ED_CollapseThreshold>
+  <ED_EconomySettings>=== Economy Settings ===</ED_EconomySettings>
+  <ED_InflationEnabled>Enable GLOBAL inflation</ED_InflationEnabled>
+  <ED_InflationDesc>If enabled, all prices in the world will rise or fall depending on the total silver supply. If disabled, prices still change but only based on local supply and demand.</ED_InflationDesc>
+  <ED_GoldStandard>Hardcore Gold Standard</ED_GoldStandard>
+  <ED_GoldStandardDesc>Stops passive silver printing by factions and freezes the inflation baseline. The economy becomes a Zero-Sum game: if the player extracts all silver from the world, factions will live in eternal deflation and resort to bartering.</ED_GoldStandardDesc>
+  <ED_PriceUpdateFactor>Price update speed (inertia): {0}%</ED_PriceUpdateFactor>
+  <ED_PriceUpdateFactorDesc>How fast prices adjust to surplus or deficit per update cycle. 100% = instant, 1% = very slow (smooth).</ED_PriceUpdateFactorDesc>
+  <ED_InflationUpdateFactor>Inflation update speed: {0}%</ED_InflationUpdateFactor>
+  <ED_InflationUpdateFactorDesc>How fast global inflation adjusts to changes in the total silver supply per cycle. Helps prevent sudden price shocks after large player trades.</ED_InflationUpdateFactorDesc>
+  <ED_HomeostasisEfficiency>Homeostasis speed: {0}</ED_HomeostasisEfficiency>
+  <ED_HomeostasisDesc>How fast the baseline economy digests new volumes of silver (GDP indexing). Lower values mean the world takes longer to recover from macroeconomic shocks.</ED_HomeostasisDesc>
+  <ED_CapacitySettings>=== Population Capacity per Settlement ===</ED_CapacitySettings>
+  <ED_ExpansionSettings>=== Expansion Settings ===</ED_ExpansionSettings>
+  <ED_ExpansionThreshold>Expansion threshold factor: {0}x</ED_ExpansionThreshold>
+  <ED_BirthRates>=== Birth Rates ===</ED_BirthRates>
+  <ED_Tech_Animal>Animal</ED_Tech_Animal>
+  <ED_Tech_Neolithic>Neolithic</ED_Tech_Neolithic>
+  <ED_Tech_Medieval>Medieval</ED_Tech_Medieval>
+  <ED_Tech_Industrial>Industrial</ED_Tech_Industrial>
+  <ED_Tech_Spacer>Spacer</ED_Tech_Spacer>
+  <ED_Tech_Ultra>Ultra</ED_Tech_Ultra>
+  <ED_Tech_Archotech>Archotech</ED_Tech_Archotech>
+  <ED_EventMultiplier>Kidnapping/Migration multiplier: {0}x</ED_EventMultiplier>
+  <ED_LifecycleSettings>=== Life Cycle (Days) ===</ED_LifecycleSettings>
+  <ED_DaysToAdult>Days to adulthood: {0} (Children -> Adults)</ED_DaysToAdult>
+  <ED_DaysToElder>Days of adult life: {0} (Adults -> Elders)</ED_DaysToElder>
+  <ED_ProductionEff>=== Production Efficiency ===</ED_ProductionEff>
+  <ED_ConsumptionCoeff>=== Consumption Coefficient ===</ED_ConsumptionCoeff>
+  <ED_SystemHeader>=== System ===</ED_SystemHeader>
+  <ED_EnableLogs>Enable detailed logs</ED_EnableLogs>
+  <ED_EnableLogsDesc>Record population actions to FinitePopulation.log and the console.</ED_EnableLogsDesc>
+  <ED_ResetSettings>Reset all settings</ED_ResetSettings>
+
+  <!-- Demography & Events -->
+  <ED_ExpansionLetterTitle>Expansion: {0}</ED_ExpansionLetterTitle>
+  <ED_ExpansionLetterText>Due to an excess of resources and people ({0}/{1}), the faction {2} has founded a new settlement: {3}.\n\nResources spent: {4:F0}</ED_ExpansionLetterText>
+  <ED_DefectionLog>[E&amp;D] A citizen left {0} due to low standard of living ({1:F1} sil/pop) and joined {2}</ED_DefectionLog>
+  <ED_KidnapLog>[E&amp;D] {0} {1} {2} people from {3}</ED_KidnapLog>
+  <ED_Kidnapped>kidnapped</ED_Kidnapped>
+  <ED_Lured>lured</ED_Lured>
+  <ED_FactionRuinedTitle>Faction Ruined: {0}</ED_FactionRuinedTitle>
+  <ED_FactionRuinedText>The last settlement of faction {0} ({1}) has been abandoned. The remaining {2} people could not maintain order and became vagrants.</ED_FactionRuinedText>
+  <ED_SettlementAbandonedTitle>Settlement Abandoned: {0}</ED_SettlementAbandonedTitle>
+  <ED_SettlementAbandonedText>The faction {0} has left {1} due to a lack of people. The garrison retreated to the remaining bases, losing {2} people.</ED_SettlementAbandonedText>
+  <ED_RebirthTitle>Rebirth: {0}</ED_RebirthTitle>
+  <ED_RebirthText>Vagrants of {0} (Pop.: {1}) have found a suitable location and founded a settlement: {2}.</ED_RebirthText>
+  <ED_TerritoryLossTitle>Territory Loss: {0}</ED_TerritoryLossTitle>
+  <ED_TerritoryLossText>The faction {0} lost a settlement in the course of a war. {1} people were killed or captured.</ED_TerritoryLossText>
+  <ED_LastBaseLossTitle>Loss of last base: {0}</ED_LastBaseLossTitle>
+  <ED_LastBaseLossText>The faction {0} has lost its last settlement. The remaining {1} people have dispersed.</ED_LastBaseLossText>
+  
+  <ED_Log_Raid>&lt;color=red&gt;[E&amp;D] RAID:&lt;/color&gt; {0} stole {1}x {2} from {3}</ED_Log_Raid>
+  <ED_Log_Export>&lt;color=#77ffff&gt;[E&amp;D] EXPORT:&lt;/color&gt; {0} ({1}) sold resources to {2} for {3} silver.</ED_Log_Export>
+  <ED_Log_Purchase>&lt;color=#77ffff&gt;[E&amp;D] PURCHASE:&lt;/color&gt; {0} bought surplus from savages {1} for {2} silver.</ED_Log_Purchase>
+  <ED_Log_Barter>&lt;color=green&gt;[E&amp;D] BARTER:&lt;/color&gt; {0} &lt;-&gt; {1} ({2} for {3})</ED_Log_Barter>
+  <ED_Log_EconomyInit>[E&amp;D] Economy initialized.</ED_Log_EconomyInit>
+  <ED_Log_InflationReset>[E&amp;D] Inflation baseline reset (anomaly detected from old saves).</ED_Log_InflationReset>
+  <ED_Log_InflationBaselineSet>[E&amp;D] Inflation baseline set: {0} silver.</ED_Log_InflationBaselineSet>
+  <ED_Log_PolicyChange>[E&amp;D] Policy change: {0} for {1} days (Inflation {2:P0})</ED_Log_PolicyChange>
+  <ED_Tax>TAX</ED_Tax>
+  <ED_Quiet>QUIET</ED_Quiet>
+  
+  <!-- UI Labels -->
+  <ED_UI_Population>Population</ED_UI_Population>
+  <ED_UI_Wealth>Wealth</ED_UI_Wealth>
+  <ED_UI_Bases>Bases</ED_UI_Bases>
+  <ED_UI_Trend>Trend</ED_UI_Trend>
+  <ED_UI_Tab>Population</ED_UI_Tab>
+  <ED_UI_TabDesc>Global population and world economy statistics.</ED_UI_TabDesc>
+  <ED_UI_TabTitle>World Demography &amp; Economy</ED_UI_TabTitle>
+  <ED_UI_ErrorNoData>Error: Population data not found.</ED_UI_ErrorNoData>
+  <ED_UI_GlobalInflation>Global inflation: {0}</ED_UI_GlobalInflation>
+  <ED_UI_TechLevelLabel>Tech: {0}</ED_UI_TechLevelLabel>
+  <ED_UI_TraitLabel>Path: {0}</ED_UI_TraitLabel>
+  <ED_UI_TotalPop>Total inhabitants: {0}</ED_UI_TotalPop>
+  <ED_UI_Adults>Adults: {0}</ED_UI_Adults>
+  <ED_UI_Males>Males: {0}</ED_UI_Males>
+  <ED_UI_Females>Females: {0}</ED_UI_Females>
+  <ED_UI_Children>Children: {0}</ED_UI_Children>
+  <ED_UI_Elders>Elders: {0}</ED_UI_Elders>
+  <ED_UI_Capital>Capital: {0}</ED_UI_Capital>
+  <ED_UI_Silver>(Silver: {0})</ED_UI_Silver>
+  <ED_UI_MainStocks>Main Stocks:</ED_UI_MainStocks>
+
+  <ED_Trait_Miner>Miners</ED_Trait_Miner>
+  <ED_Trait_Farmer>Farmers</ED_Trait_Farmer>
+  <ED_Trait_Medical>Medical</ED_Trait_Medical>
+  <ED_Trait_Technician>Technicians</ED_Trait_Technician>
+  <ED_Trait_Tailor>Tailors</ED_Trait_Tailor>
+  <ED_Trait_Warrior>Warriors</ED_Trait_Warrior>
+  <ED_Trait_Alchemist>Alchemists</ED_Trait_Alchemist>
+  <ED_Trait_Jeweler>Jewelers</ED_Trait_Jeweler>
+  <ED_Trait_Hunter>Hunters</ED_Trait_Hunter>
+  <ED_Trait_Lumberjack>Lumberjacks</ED_Trait_Lumberjack>
+  <ED_Trait_Rancher>Ranchers</ED_Trait_Rancher>
+  <ED_Trait_Fisherman>Fishermen</ED_Trait_Fisherman>
+  <ED_Trait_Generalist>Generalists</ED_Trait_Generalist>
+  <ED_Trait_Wholesale>Wholesalers</ED_Trait_Wholesale>
+</LanguageData>

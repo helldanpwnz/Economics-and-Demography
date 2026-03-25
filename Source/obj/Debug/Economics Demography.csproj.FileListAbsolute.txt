@@ -1,0 +1,7 @@
+E:\SteamLibrary\steamapps\common\RimWorld\Mods\Economics and Demography\1.6\Assemblies\EconomicsDemography.dll
+E:\SteamLibrary\steamapps\common\RimWorld\Mods\Economics and Demography\Source\obj\Debug\Economics Demography.csproj.AssemblyReference.cache
+E:\SteamLibrary\steamapps\common\RimWorld\Mods\Economics and Demography\Source\obj\Debug\Economics Demography.GeneratedMSBuildEditorConfig.editorconfig
+E:\SteamLibrary\steamapps\common\RimWorld\Mods\Economics and Demography\Source\obj\Debug\Economics Demography.AssemblyInfoInputs.cache
+E:\SteamLibrary\steamapps\common\RimWorld\Mods\Economics and Demography\Source\obj\Debug\Economics Demography.AssemblyInfo.cs
+E:\SteamLibrary\steamapps\common\RimWorld\Mods\Economics and Demography\Source\obj\Debug\Economics Demography.csproj.CoreCompileInputs.cache
+E:\SteamLibrary\steamapps\common\RimWorld\Mods\Economics and Demography\Source\obj\Debug\EconomicsDemography.dll
