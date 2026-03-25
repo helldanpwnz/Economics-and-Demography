@@ -55,6 +55,14 @@
   <ED_LastBaseLossTitle>Loss of last base: {0}</ED_LastBaseLossTitle>
   <ED_LastBaseLossText>The faction {0} has lost its last settlement. The remaining {1} people have dispersed.</ED_LastBaseLossText>
   
+  <ED_VagrantsStatusChildren>Survivors children and elders</ED_VagrantsStatusChildren>
+  <ED_VagrantsStatusRemnants>Faction remnants</ED_VagrantsStatusRemnants>
+  <ED_VagrantsMessage>{0} {1} ({2} people) are now wandering the world without a home.</ED_VagrantsMessage>
+  <ED_FactionExtinctionTitle>Extinction: {0}</ED_FactionExtinctionTitle>
+  <ED_FactionExtinctionText>The last inhabitant of faction {0} died. Their settlements have become empty.</ED_FactionExtinctionText>
+  <ED_FactionDefeatTitle>Faction Defeated: {0}</ED_FactionDefeatTitle>
+  <ED_FactionDefeatText>The history of {0} is over. The last survivors have vanished.</ED_FactionDefeatText>
+  
   <ED_Log_Raid>&lt;color=red&gt;[E&amp;D] RAID:&lt;/color&gt; {0} stole {1}x {2} from {3}</ED_Log_Raid>
   <ED_Log_Export>&lt;color=#77ffff&gt;[E&amp;D] EXPORT:&lt;/color&gt; {0} ({1}) sold resources to {2} for {3} silver.</ED_Log_Export>
   <ED_Log_Purchase>&lt;color=#77ffff&gt;[E&amp;D] PURCHASE:&lt;/color&gt; {0} bought surplus from savages {1} for {2} silver.</ED_Log_Purchase>
@@ -79,6 +87,7 @@
   <ED_UI_TechLevelLabel>Tech: {0}</ED_UI_TechLevelLabel>
   <ED_UI_TraitLabel>Path: {0}</ED_UI_TraitLabel>
   <ED_UI_TotalPop>Total inhabitants: {0}</ED_UI_TotalPop>
+  <ED_UI_Wanderers>Vagrants: {0}</ED_UI_Wanderers>
   <ED_UI_Adults>Adults: {0}</ED_UI_Adults>
   <ED_UI_Males>Males: {0}</ED_UI_Males>
   <ED_UI_Females>Females: {0}</ED_UI_Females>

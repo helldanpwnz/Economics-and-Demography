@@ -429,8 +429,8 @@ namespace EconomicsDemography
                     }
                     if (!f.defeated) DefeatFaction(f);
                     
-                    Find.LetterStack.ReceiveLetter("Вымирание: " + f.Name, 
-                        $"Последний житель фракции {f.Name} погиб. Их поселения опустели.", 
+                    Find.LetterStack.ReceiveLetter("ED_FactionExtinctionTitle".Translate(f.Name), 
+                        "ED_FactionExtinctionText".Translate(f.Name), 
                         LetterDefOf.NeutralEvent);
                 }
             }
@@ -450,9 +450,9 @@ namespace EconomicsDemography
                 if (!f.defeated && !vagrantWarningsSent.Contains(f.loadID))
                 {
                     int adults = factionPopulation.TryGetValue(f.loadID, out int a) ? a : 0;
-                    string status = (adults <= 0) ? "Выжившие дети и старики" : "Остатки фракции";
+                    string status = (adults <= 0) ? "ED_VagrantsStatusChildren".Translate() : "ED_VagrantsStatusRemnants".Translate();
 
-                    Messages.Message($"{status} {f.Name} ({totalLiving} чел.) теперь скитаются по миру без дома.", MessageTypeDefOf.NeutralEvent);
+                    Messages.Message("ED_VagrantsMessage".Translate(status, f.Name, totalLiving), MessageTypeDefOf.NeutralEvent);
                     vagrantWarningsSent.Add(f.loadID);
                 }
             }
@@ -463,7 +463,7 @@ namespace EconomicsDemography
             f.defeated = true;
             f.hidden = true; 
             factionPopulation[f.loadID] = 0;
-            Find.LetterStack.ReceiveLetter("Гибель фракции: " + f.Name, $"История народа {f.Name} завершена. Последние выжившие исчезли.", LetterDefOf.NeutralEvent, null, f);
+            Find.LetterStack.ReceiveLetter("ED_FactionDefeatTitle".Translate(f.Name), "ED_FactionDefeatText".Translate(f.Name), LetterDefOf.NeutralEvent, null, f);
         }
 
         private void CreateRuinsWithTimer(int tile, Faction faction)

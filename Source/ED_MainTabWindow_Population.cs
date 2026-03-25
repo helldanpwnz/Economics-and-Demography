@@ -127,7 +127,12 @@ namespace EconomicsDemography
             float statsX = rect.x + 580f;
             // Заголовок на одной линии с капиталом
             Rect statsTitleRect = new Rect(statsX, midY - 80f, 280f, 30f);
-            Widgets.Label(statsTitleRect, "ED_UI_TotalPop".Translate($"<color=#ffee00>{total}</color>"));
+            int groundBases = Find.WorldObjects.Settlements.Count(s => s.Faction == f);
+            int orbBases = manager.orbitalBases.TryGetValue(f.loadID, out int ob) ? ob : 0;
+            if (groundBases + orbBases == 0)
+                Widgets.Label(statsTitleRect, $"<color=#a020f0>{"ED_UI_Wanderers".Translate(total)}</color>");
+            else
+                Widgets.Label(statsTitleRect, "ED_UI_TotalPop".Translate($"<color=#ffee00>{total}</color>"));
 
             // Список под заголовок
             Rect statsListRect = new Rect(statsX, midY - 45f, 280f, 130f);

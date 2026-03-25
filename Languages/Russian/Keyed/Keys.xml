@@ -55,6 +55,14 @@
   <ED_LastBaseLossTitle>Потеря последней базы: {0}</ED_LastBaseLossTitle>
   <ED_LastBaseLossText>Фракция {0} лишилась последнего поселения. Оставшиеся {1} чел. рассеялись.</ED_LastBaseLossText>
   
+  <ED_VagrantsStatusChildren>Выжившие дети и старики</ED_VagrantsStatusChildren>
+  <ED_VagrantsStatusRemnants>Остатки фракции</ED_VagrantsStatusRemnants>
+  <ED_VagrantsMessage>{0} {1} ({2} чел.) теперь скитаются по миру без дома.</ED_VagrantsMessage>
+  <ED_FactionExtinctionTitle>Вымирание: {0}</ED_FactionExtinctionTitle>
+  <ED_FactionExtinctionText>Последний житель фракции {0} погиб. Их поселения опустели.</ED_FactionExtinctionText>
+  <ED_FactionDefeatTitle>Гибель фракции: {0}</ED_FactionDefeatTitle>
+  <ED_FactionDefeatText>История народа {0} завершена. Последние выжившие исчезли.</ED_FactionDefeatText>
+  
   <ED_Log_Raid>&lt;color=red&gt;[E&amp;D] НАБЕГ:&lt;/color&gt; {0} украли {1}x {2} у {3}</ED_Log_Raid>
   <ED_Log_Export>&lt;color=#77ffff&gt;[E&amp;D] ЭКСПОРТ:&lt;/color&gt; {0} ({1}) продал ресурсы {2} за {3} серебра.</ED_Log_Export>
   <ED_Log_Purchase>&lt;color=#77ffff&gt;[E&amp;D] ЗАКУПКА:&lt;/color&gt; {0} выкупил излишки у дикарей {1} за {2} серебра.</ED_Log_Purchase>
@@ -79,6 +87,7 @@
   <ED_UI_TechLevelLabel>Тех-уровень: {0}</ED_UI_TechLevelLabel>
   <ED_UI_TraitLabel>Путь: {0}</ED_UI_TraitLabel>
   <ED_UI_TotalPop>Всего жителей: {0}</ED_UI_TotalPop>
+  <ED_UI_Wanderers>Бродяги: {0}</ED_UI_Wanderers>
   <ED_UI_Adults>Взрослых: {0}</ED_UI_Adults>
   <ED_UI_Males>Мужчин: {0}</ED_UI_Males>
   <ED_UI_Females>Женщин: {0}</ED_UI_Females>
