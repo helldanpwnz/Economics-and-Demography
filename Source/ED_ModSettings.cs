@@ -9,6 +9,8 @@ namespace EconomicsDemography
         // 1. Инфляция
         public bool enableGlobalInflation = true;
         public bool enableGoldStandard = false;
+        public bool enableExpansion = true;
+        public bool enablePopulationLoss = true;
         public float homeostasisEfficiency = 0.001f;
         private Vector2 scrollPosition = Vector2.zero;
         public bool enableLogs = false;
@@ -54,6 +56,8 @@ namespace EconomicsDemography
             base.ExposeData();
             Scribe_Values.Look(ref enableGlobalInflation, "enableGlobalInflation", true);
             Scribe_Values.Look(ref enableGoldStandard, "enableGoldStandard", false);
+            Scribe_Values.Look(ref enableExpansion, "enableExpansion", true);
+            Scribe_Values.Look(ref enablePopulationLoss, "enablePopulationLoss", true);
             Scribe_Values.Look(ref homeostasisEfficiency, "homeostasisEfficiency", 0.001f);
             Scribe_Values.Look(ref enableLogs, "enableLogs", false);
             Scribe_Values.Look(ref capAnimal, "capAnimal", 150f);
@@ -133,6 +137,8 @@ namespace EconomicsDemography
             prodUltra = 1f;
             prodArchotech = 1f;
             expansionThresholdFactor = 1.1f;
+            enableExpansion = true;
+            enablePopulationLoss = true;
             updateIntervalHours = 24f;
             priceUpdateFactor = 0.2f;
             inflationUpdateFactor = 0.2f;
@@ -210,6 +216,11 @@ namespace EconomicsDemography
             capArchotech = Math.Max(1f, listing.Slider(capArchotech, 1f, 500f));
 
             listing.Gap(12f);
+            listing.Label("ED_ExpansionSettings".Translate());
+            listing.GapLine();
+            listing.CheckboxLabeled("ED_EnableExpansion".Translate(), ref enableExpansion);
+            listing.CheckboxLabeled("ED_EnablePopulationLoss".Translate(), ref enablePopulationLoss);
+            listing.Gap(6f);
             listing.Label("ED_ExpansionThreshold".Translate((expansionThresholdFactor * 100f).ToString("F0")));
             expansionThresholdFactor = listing.Slider(expansionThresholdFactor, 0.5f, 1.5f);
 

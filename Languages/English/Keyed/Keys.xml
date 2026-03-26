@@ -17,6 +17,8 @@
   <ED_HomeostasisDesc>How fast the baseline economy digests new volumes of silver (GDP indexing). Lower values mean the world takes longer to recover from macroeconomic shocks.</ED_HomeostasisDesc>
   <ED_CapacitySettings>=== Population Capacity per Settlement ===</ED_CapacitySettings>
   <ED_ExpansionSettings>=== Expansion Settings ===</ED_ExpansionSettings>
+  <ED_EnableExpansion>Enable expansion (founding new bases)</ED_EnableExpansion>
+  <ED_EnablePopulationLoss>Enable population loss (starvation/no home)</ED_EnablePopulationLoss>
   <ED_ExpansionThreshold>Expansion threshold factor: {0}x</ED_ExpansionThreshold>
   <ED_BirthRates>=== Birth Rates ===</ED_BirthRates>
   <ED_Tech_Animal>Animal</ED_Tech_Animal>

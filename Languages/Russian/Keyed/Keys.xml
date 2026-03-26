@@ -17,6 +17,8 @@
   <ED_HomeostasisDesc>Как быстро базовая экономика впитывает новые объемы серебра (индексация ВВП). Чем ниже значение, тем дольше мир будет восстанавливаться после сильных макроэкономических потрясений.</ED_HomeostasisDesc>
   <ED_CapacitySettings>=== Лимит населения на поселение ===</ED_CapacitySettings>
   <ED_ExpansionSettings>=== Настройки экспансии ===</ED_ExpansionSettings>
+  <ED_EnableExpansion>Разрешить экспансию (основание новых баз)</ED_EnableExpansion>
+  <ED_EnablePopulationLoss>Разрешить потери населения (при нехватке жилья/еды)</ED_EnablePopulationLoss>
   <ED_ExpansionThreshold>Порог экспансии: {0}x</ED_ExpansionThreshold>
   <ED_BirthRates>=== Множители рождаемости ===</ED_BirthRates>
   <ED_Tech_Animal>Животные</ED_Tech_Animal>

@@ -134,7 +134,7 @@ namespace EconomicsDemography
                 int spaceBasesCount = orbitalBases.TryGetValue(fid, out int sb) ? sb : 0;
                 int totalBases = groundBases + spaceBasesCount;
                 
-                if (totalBases == 0 && totalLiving > 0)
+                if (totalBases == 0 && totalLiving > 0 && EconomicsDemographyMod.Settings.enablePopulationLoss)
                 {
                     int vagrantLoss = Mathf.CeilToInt(totalLiving * 0.01f);
                     ModifyPopulation(f, -vagrantLoss);
@@ -210,7 +210,7 @@ namespace EconomicsDemography
                 
                 float starvationFactor = Mathf.Clamp(coverage, 0.1f, 1.0f);
 
-                if (coverage < 0.4f)
+                if (coverage < 0.4f && EconomicsDemographyMod.Settings.enablePopulationLoss)
                 {
                     float deficit = totalDailyCost - wealthAvailable;
                     
@@ -526,7 +526,7 @@ namespace EconomicsDemography
                 lastBaseCount[fid] = groundBases;
 
                 // Г) Экспансия (Расселение при перенаселении)
-                if (Find.TickManager.TicksGame >= 90000) // 15 дней
+                if (EconomicsDemographyMod.Settings.enableExpansion && Find.TickManager.TicksGame >= 90000) // 15 дней
                 {
                     if (totalBases > 0 && f.def.defName != "TradersGuild" && f.def.defName != "Salvagers")
                     {
