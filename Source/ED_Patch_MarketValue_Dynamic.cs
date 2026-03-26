@@ -30,7 +30,7 @@ namespace EconomicsDemography
                 var manager = WorldPopulationManager.Instance;
                 if (manager != null)
                 {
-                    if (manager.globalPriceModifiers.TryGetValue(def.defName, out float mult))
+                    if (manager.globalPriceModifiers != null && manager.globalPriceModifiers.TryGetValue(def, out float mult))
                     {
                         __result *= mult;
                     }

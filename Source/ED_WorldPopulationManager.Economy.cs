@@ -198,7 +198,7 @@ public override void WorldComponentTick()
 
             float demandMult = Mathf.Max(0.5f, totalWorldPop / (activeFactionCount * 25f)); 
 
-            Dictionary<string, float> newModifiers = new Dictionary<string, float>();
+            Dictionary<ThingDef, float> newModifiers = new Dictionary<ThingDef, float>();
             Dictionary<string, int> totalWorldStock = new Dictionary<string, int>();
 
             foreach (var kvp in factionStockpiles)
@@ -261,7 +261,7 @@ public override void WorldComponentTick()
                 targetPriceMult *= Rand.Range(0.95f, 1.05f); 
                 targetPriceMult = Mathf.Clamp(targetPriceMult, 0.2f, 5.0f);
 
-                float oldMult = this.globalPriceModifiers.TryGetValue(def.defName, out float old) ? old : 1.0f;
+                float oldMult = this.globalPriceModifiers.TryGetValue(def, out float old) ? old : 1.0f;
                 
                 float finalSmoothedMult = Mathf.Lerp(oldMult, targetPriceMult, EconomicsDemographyMod.Settings.priceUpdateFactor);
 
@@ -269,7 +269,7 @@ public override void WorldComponentTick()
 
                 if (Mathf.Abs(finalSmoothedMult - 1.0f) > 0.001f)
                 {
-                    newModifiers[def.defName] = finalSmoothedMult;
+                    newModifiers[def] = finalSmoothedMult;
                 }
             }
             

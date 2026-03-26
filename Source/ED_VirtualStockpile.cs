@@ -103,7 +103,7 @@ namespace EconomicsDemography
         }
 
         // Добавили аргумент Dictionary с модификаторами цен
-        public bool TryConsumeWealth(float valueNeeded, Dictionary<string, float> priceModifiers)
+        public bool TryConsumeWealth(float valueNeeded, Dictionary<ThingDef, float> priceModifiers)
         {
             // 1. Проверка: а есть ли у нас столько добра? (СОХРАНЕНО)
             if (GetTotalWealth() < valueNeeded) return false;
@@ -117,10 +117,13 @@ namespace EconomicsDemography
             bool highInflation = currentInf > 1.05f;    // Инфляция: серебра в мире слишком много
 
             var itemsList = inventory.Keys
-                .Select(key => new { 
+                .Select(key => {
+                    ThingDef itemDef = DefDatabase<ThingDef>.GetNamedSilentFail(key);
+                    return new { 
                     Key = key, 
-                    Def = DefDatabase<ThingDef>.GetNamedSilentFail(key),
-                    Mult = (priceModifiers != null && priceModifiers.TryGetValue(key, out float m)) ? m : 1.0f 
+                    Def = itemDef,
+                    Mult = (priceModifiers != null && itemDef != null && priceModifiers.TryGetValue(itemDef, out float m)) ? m : 1.0f 
+                    };
                 })
                 .Where(x => x.Def != null)
                 .OrderBy(x => x.Mult) // Всегда от дешевых (хлам) к дорогим

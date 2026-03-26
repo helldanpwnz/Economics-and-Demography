@@ -25,8 +25,8 @@ namespace EconomicsDemography
         }
 
         [HarmonyPriority(Priority.First)]
-        [HarmonyPostfix]
-        static void Postfix()
+        [HarmonyFinalizer]
+        static void Finalizer(Exception __exception)
         {
             IsGeneratingMap = false;
         }

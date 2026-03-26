@@ -84,12 +84,13 @@ namespace EconomicsDemography
                     string keyA = actorStock.inventory
                         .Where(kvp => kvp.Value > 0 && kvp.Key != "Silver")
                         .OrderByDescending(kvp => {
-                            float m = globalPriceModifiers.TryGetValue(kvp.Key, out float val) ? val : 1.0f;
+                            ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(kvp.Key);
+                            if (d == null) return 0f;
+                            float m = globalPriceModifiers.TryGetValue(d, out float val) ? val : 1.0f;
                             float priority = kvp.Value * (2.0f - m);
                             
                             if (needsMoney) {
-                                ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(kvp.Key);
-                                priority *= (d?.BaseMarketValue ?? 1f) / 10f; 
+                                priority *= d.BaseMarketValue / 10f; 
                             }
                             return priority;
                         })
@@ -103,7 +104,7 @@ namespace EconomicsDemography
                     bool isMilitary = defA.IsWeapon || defA.IsApparel;
                     if (isMilitary && actor.def.techLevel != partner.def.techLevel) continue;
 
-                    float marketMult = globalPriceModifiers.TryGetValue(keyA, out float mm) ? mm : 1.0f;
+                    float marketMult = globalPriceModifiers.TryGetValue(defA, out float mm) ? mm : 1.0f;
                     float baseValue = defA.BaseMarketValue * marketMult;
 
                     float sellPrice = actor.def.permanentEnemy ? (baseValue * 0.5f) : baseValue;
@@ -137,7 +138,9 @@ namespace EconomicsDemography
                         string keyB = partnerStock.inventory
                             .Where(kvp => kvp.Value > 0 && kvp.Key != "Silver" && kvp.Key != keyA)
                             .OrderByDescending(kvp => {
-                                float m = globalPriceModifiers.TryGetValue(kvp.Key, out float v) ? v : 1.0f;
+                                ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(kvp.Key);
+                                if (d == null) return 0f;
+                                float m = globalPriceModifiers.TryGetValue(d, out float v) ? v : 1.0f;
                                 return kvp.Value * (2.0f - m);
                             })
                             .Select(kvp => kvp.Key)

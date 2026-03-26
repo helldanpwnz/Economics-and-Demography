@@ -28,7 +28,7 @@ namespace EconomicsDemography
                 var manager = Find.World?.GetComponent<WorldPopulationManager>();
                 if (manager == null || manager.globalPriceModifiers == null) return;
 
-                if (manager.globalPriceModifiers.TryGetValue(def.defName, out float mult))
+                if (manager.globalPriceModifiers.TryGetValue(def, out float mult))
                 {
                     if (Mathf.Abs(mult - 1f) < 0.05f) return;
 

@@ -474,7 +474,7 @@ namespace EconomicsDemography
                 }
 
                 var profitable = potentialGoods.Where(def => !activeLines.Contains(def) && !IsSaturatedLocal(def) && CanAddByLimit(def, activeLines))
-                    .OrderByDescending(def => def.BaseMarketValue * (globalPriceModifiers.TryGetValue(def.defName, out float m) ? m : 1.0f))
+                    .OrderByDescending(def => def.BaseMarketValue * (globalPriceModifiers.TryGetValue(def, out float m) ? m : 1.0f))
                     .Take(varietyLimit - activeLines.Count);
                 foreach (var p in profitable) activeLines.Add(p);
 
@@ -497,7 +497,7 @@ namespace EconomicsDemography
                         string trait = factionTraits.TryGetValue(fid, out string t) ? t : "Generalist";
                         if (GetWeightForDef(good, trait) >= 1000f) slotBudget *= 2.0f;
 
-                        float actualMarketPrice = Mathf.Max(good.BaseMarketValue * (globalPriceModifiers.TryGetValue(good.defName, out float m) ? m : 1.0f), 0.1f);
+                        float actualMarketPrice = Mathf.Max(good.BaseMarketValue * (globalPriceModifiers.TryGetValue(good, out float m) ? m : 1.0f), 0.1f);
                         if (!myProgress.ContainsKey(good.defName)) myProgress[good.defName] = 0f;
                         myProgress[good.defName] += slotBudget;
 

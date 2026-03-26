@@ -23,7 +23,7 @@ namespace EconomicsDemography
         public Dictionary<int, VirtualStockpile> factionStockpiles = new Dictionary<int, VirtualStockpile>();
         public Dictionary<int, int> lastRestockTick = new Dictionary<int, int>();
         public Dictionary<int, int> lastBaseCount = new Dictionary<int, int>();
-        public Dictionary<string, float> globalPriceModifiers = new Dictionary<string, float>();
+        public Dictionary<ThingDef, float> globalPriceModifiers = new Dictionary<ThingDef, float>();
         public Dictionary<int, List<string>> monthlyProductionPlans = new Dictionary<int, List<string>>();
         public float FactionWealth = 0f;
         public Dictionary<int, float> factionLimitModifiers = new Dictionary<int, float>();
