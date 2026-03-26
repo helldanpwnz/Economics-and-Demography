@@ -65,7 +65,7 @@ namespace EconomicsDemography
 
             if (recoveredCount > 0 || silverRecovered > 0)
             {
-                Log.Message($"<color=green>[E&D Возврат]</color> Карта {f.Name} удаляется. Жители забрали: {recoveredCount} предм., {silverRecovered} серебра.");
+                Log.Message(string.Format((string)"ED_Log_RecoveryMapRemoval".Translate(), f.Name, recoveredCount, silverRecovered));
             }
         }
     }

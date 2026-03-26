@@ -194,7 +194,7 @@ namespace EconomicsDemography
                     if (d.IsMedicine || d.isTechHediff) bonus = 1000f;
                     break;
 
-                case "Alchemist":
+                case "Chemist":
                     if (d.IsDrug || name.Contains("chemfuel")) bonus = 1000f;
                     break;
 
@@ -255,7 +255,7 @@ namespace EconomicsDemography
             catch {}
 
             float miner = 1f, farmer = 1f, medical = 1f, technician = 1f, tailor = 1f;
-            float warrior = 1f, alchemist = 1f, jeweler = 1f, hunter = 1f, lumberjack = 1f;
+            float warrior = 1f, chemist = 1f, jeweler = 1f, hunter = 1f, lumberjack = 1f;
             float rancher = 1f, fisherman = 1f;
 
             if (hilliness == Hilliness.Mountainous) miner += 12f;
@@ -274,7 +274,7 @@ namespace EconomicsDemography
 
             if (rainfall > 1500f) medical += 6f; 
             if (rainfall > 800f) farmer += 3f;
-            if (rainfall > 1000f && temperature > 20f) alchemist += 10f; 
+            if (rainfall > 1000f && temperature > 20f) chemist += 10f; 
 
             if (temperature < -10f || temperature > 35f) { technician += 7f; warrior += 5f; }
             if (temperature > 10f && temperature < 25f && plantDensity > 0.4f) jeweler += 8f; 
@@ -291,10 +291,27 @@ namespace EconomicsDemography
             if (bName.Contains("ocean") || bName.Contains("sea") || bName.Contains("coast") || 
                 bName.Contains("river") || bName.Contains("island") || bName.Contains("beach")) fisherman += 25f;
 
+            if (f != null)
+            {
+                if (f.def.techLevel > TechLevel.Industrial) hunter = 0f;
+                
+                string fName = f.def.defName.ToLowerInvariant();
+                if (fName.Contains("pirate") || fName.Contains("cannibal") || fName.Contains("waster") || fName.Contains("mercenary"))
+                {
+                    farmer = 0f;
+                    rancher = 0f;
+                    medical = 0f;
+                    jeweler = 0f;
+                    tailor = 0f;
+                    warrior += 20f;
+                    chemist += 5f;
+                }
+            }
+
             var scores = new Dictionary<string, float>
             {
                 { "Miner", miner }, { "Farmer", farmer }, { "Medical", medical }, { "Technician", technician },
-                { "Tailor", tailor }, { "Warrior", warrior }, { "Alchemist", alchemist }, { "Jeweler", jeweler },
+                { "Tailor", tailor }, { "Warrior", warrior }, { "Chemist", chemist }, { "Jeweler", jeweler },
                 { "Hunter", hunter }, { "Lumberjack", lumberjack }, { "Rancher", rancher }, { "Fisherman", fisherman }
             };
 
@@ -458,7 +475,7 @@ namespace EconomicsDemography
                         if (!added) break;
                     }
                     monthlyProductionPlans[fid] = mixedPlan;
-                    if (mixedPlan.Any()) Log.Message($"[E&D] План обновлен для {f.Name} ({trait}): {mixedPlan[0]}...");
+                    if (mixedPlan.Any()) Log.Message(string.Format((string)"ED_Log_ProductionPlanUpdated".Translate(), f.Name, trait, mixedPlan[0]));
                 }
 
                 int varietyLimit = Mathf.Clamp(Mathf.CeilToInt(adults / 10f), 6, 25);

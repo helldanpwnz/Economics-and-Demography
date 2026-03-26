@@ -40,7 +40,7 @@ namespace EconomicsDemography
                         }
                         
                         pawn.inventory.innerContainer.ClearAndDestroyContents();
-                        Log.Message($"[E&D] Пешка из {pawn.Faction.Name} покинула карту. Её товары сохранены в виртуальный склад.");
+                        Log.Message("ED_Log_PawnDepartedMap".Translate(pawn.Faction.Name));
                     }
                 }
             }

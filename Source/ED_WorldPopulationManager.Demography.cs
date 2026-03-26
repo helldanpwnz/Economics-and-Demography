@@ -309,18 +309,24 @@ namespace EconomicsDemography
 
                             if (totalBases == 1)
                             {
-                                Find.LetterStack.ReceiveLetter("ED_FactionRuinedTitle".Translate(f.Name),
-                                    "ED_FactionRuinedText".Translate(f.Name, settName, totalLiving),
-                                    LetterDefOf.NegativeEvent, new GlobalTargetInfo(tile));
+                                if (EconomicsDemographyMod.Settings.enableNotifications)
+                                {
+                                    Find.LetterStack.ReceiveLetter("ED_FactionRuinedTitle".Translate(f.Name),
+                                        "ED_FactionRuinedText".Translate(f.Name, settName, totalLiving),
+                                        LetterDefOf.NegativeEvent, new GlobalTargetInfo(tile));
+                                }
                             }
                             else
                             {
                                 int abandonmentLoss = Mathf.Max(1, Mathf.RoundToInt(totalLiving * 0.05f));
                                 ModifyPopulation(f, -abandonmentLoss);
 
-                                Find.LetterStack.ReceiveLetter("ED_SettlementAbandonedTitle".Translate(f.Name),
-                                    "ED_SettlementAbandonedText".Translate(f.Name, settName, abandonmentLoss),
-                                    LetterDefOf.NeutralEvent, new GlobalTargetInfo(tile));
+                                if (EconomicsDemographyMod.Settings.enableNotifications)
+                                {
+                                    Find.LetterStack.ReceiveLetter("ED_SettlementAbandonedTitle".Translate(f.Name),
+                                        "ED_SettlementAbandonedText".Translate(f.Name, settName, abandonmentLoss),
+                                        LetterDefOf.NeutralEvent, new GlobalTargetInfo(tile));
+                                }
                             }
 
                             groundBases--;
@@ -489,9 +495,12 @@ namespace EconomicsDemography
 
                                 if (vagrantWarningsSent.Contains(fid)) vagrantWarningsSent.Remove(fid);
                                 
-                                Find.LetterStack.ReceiveLetter("ED_RebirthTitle".Translate(f.Name), 
-                                    "ED_RebirthText".Translate(f.Name, adults, newSett.Name), 
-                                    LetterDefOf.PositiveEvent, new GlobalTargetInfo(newTile));
+                                if (EconomicsDemographyMod.Settings.enableNotifications)
+                                {
+                                    Find.LetterStack.ReceiveLetter("ED_RebirthTitle".Translate(f.Name), 
+                                        "ED_RebirthText".Translate(f.Name, adults, newSett.Name), 
+                                        LetterDefOf.PositiveEvent, new GlobalTargetInfo(newTile));
+                                }
                             }
                         }
                     }
@@ -509,17 +518,23 @@ namespace EconomicsDemography
                         if ((lastBaseCount[fid] - i) > 1)
                         {
                             ModifyPopulation(f, -popLoss);
-                            Find.LetterStack.ReceiveLetter("ED_TerritoryLossTitle".Translate(f.Name), 
-                                "ED_TerritoryLossText".Translate(f.Name, popLoss), 
-                                LetterDefOf.NegativeEvent);
+                            if (EconomicsDemographyMod.Settings.enableNotifications)
+                            {
+                                Find.LetterStack.ReceiveLetter("ED_TerritoryLossTitle".Translate(f.Name), 
+                                    "ED_TerritoryLossText".Translate(f.Name, popLoss), 
+                                    LetterDefOf.NegativeEvent);
+                            }
                         }
                         else
                         {
                             int lastStandLoss = Mathf.RoundToInt(totalLiving * 0.4f);
                             ModifyPopulation(f, -lastStandLoss);
-                            Find.LetterStack.ReceiveLetter("ED_LastBaseLossTitle".Translate(f.Name), 
-                                "ED_LastBaseLossText".Translate(f.Name, totalLiving - lastStandLoss), 
-                                LetterDefOf.NeutralEvent);
+                            if (EconomicsDemographyMod.Settings.enableNotifications)
+                            {
+                                Find.LetterStack.ReceiveLetter("ED_LastBaseLossTitle".Translate(f.Name), 
+                                    "ED_LastBaseLossText".Translate(f.Name, totalLiving - lastStandLoss), 
+                                    LetterDefOf.NeutralEvent);
+                            }
                         }
                     }
                 }
@@ -604,9 +619,12 @@ namespace EconomicsDemography
                                     
                                     if (vagrantWarningsSent.Contains(fid)) vagrantWarningsSent.Remove(fid);
                                     
-                                    Find.LetterStack.ReceiveLetter("ED_ExpansionLetterTitle".Translate(f.Name), 
-                                        "ED_ExpansionLetterText".Translate(totalLiving, totalCapacity, f.Name, newSett.Name, expansionCost), 
-                                        LetterDefOf.PositiveEvent, new GlobalTargetInfo(newTile));
+                                    if (EconomicsDemographyMod.Settings.enableNotifications)
+                                    {
+                                        Find.LetterStack.ReceiveLetter("ED_ExpansionLetterTitle".Translate(f.Name), 
+                                            "ED_ExpansionLetterText".Translate(totalLiving, totalCapacity, f.Name, newSett.Name, expansionCost), 
+                                            LetterDefOf.PositiveEvent, new GlobalTargetInfo(newTile));
+                                    }
 
                                     totalBases++;
                                     totalCapacity = totalBases * capacityPerBase;

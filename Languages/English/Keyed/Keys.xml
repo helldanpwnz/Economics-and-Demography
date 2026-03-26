@@ -19,6 +19,8 @@
   <ED_ExpansionSettings>=== Expansion Settings ===</ED_ExpansionSettings>
   <ED_EnableExpansion>Enable expansion (founding new bases)</ED_EnableExpansion>
   <ED_EnablePopulationLoss>Enable population loss (starvation/no home)</ED_EnablePopulationLoss>
+  <ED_EnableNotifications>Enable in-game notifications</ED_EnableNotifications>
+  <ED_EnableNotificationsDesc>Enable or disable letters and messages (births, maturation, faction events, etc.). Only technical logs remain if disabled.</ED_EnableNotificationsDesc>
   <ED_ExpansionThreshold>Expansion threshold factor: {0}x</ED_ExpansionThreshold>
   <ED_BirthRates>=== Birth Rates ===</ED_BirthRates>
   <ED_Tech_Animal>Animal</ED_Tech_Animal>
@@ -105,7 +107,7 @@
   <ED_Trait_Technician>Technicians</ED_Trait_Technician>
   <ED_Trait_Tailor>Tailors</ED_Trait_Tailor>
   <ED_Trait_Warrior>Warriors</ED_Trait_Warrior>
-  <ED_Trait_Alchemist>Alchemists</ED_Trait_Alchemist>
+  <ED_Trait_Chemist>Chemists</ED_Trait_Chemist>
   <ED_Trait_Jeweler>Jewelers</ED_Trait_Jeweler>
   <ED_Trait_Hunter>Hunters</ED_Trait_Hunter>
   <ED_Trait_Lumberjack>Lumberjacks</ED_Trait_Lumberjack>
@@ -113,4 +115,47 @@
   <ED_Trait_Fisherman>Fishermen</ED_Trait_Fisherman>
   <ED_Trait_Generalist>Generalists</ED_Trait_Generalist>
   <ED_Trait_Wholesale>Wholesalers</ED_Trait_Wholesale>
+
+  <!-- Missing & New Logs -->
+  <ED_Log_PawnDeathPregnancy>Faction {0} lost a child due to the death/loss of a pregnant pawn ({1}).</ED_Log_PawnDeathPregnancy>
+  <ED_Log_StartStockpile>Starting stockpile for {0} ({1}) ready. Capital: {2}$</ED_Log_StartStockpile>
+  <ED_Log_RestockAbsorbed>Restock: Faction {0} absorbed {1} generic items.</ED_Log_RestockAbsorbed>
+  <ED_Log_NewFactionAdded>New faction {0} added {1}$ to the baseline silver limit.</ED_Log_NewFactionAdded>
+  <ED_Log_EconomyStatus>Economy status: Inflation {0}, Total Silver {1}.</ED_Log_EconomyStatus>
+  <ED_Log_RoleReset>Fix: Faction {0} in space had role {1}. Recalculated to: {2}.</ED_Log_RoleReset>
+  <ED_Log_AbandonedCheck>Monthly check for abandoned production projects...</ED_Log_AbandonedCheck>
+  <ED_Log_MarketUpdated>Market updated. Pop: {0}, Demand Multiplier: {1}</ED_Log_MarketUpdated>
+  <ED_Log_ProductionPlanUpdated>Production plan updated for {0} ({1}): {2}...</ED_Log_ProductionPlanUpdated>
+  <ED_Log_SettlementDestroyedReduction>Base {0} destroyed. Global stockpile of {1} reduced by 1/{2} share.</ED_Log_SettlementDestroyedReduction>
+  <ED_Log_PawnLeftFaction>Pawn {0} left {1}. Population adjusted (-1).</ED_Log_PawnLeftFaction>
+  <ED_Log_PawnJoinedFaction>Pawn {0} joined {1}. Population adjusted (+1).</ED_Log_PawnJoinedFaction>
+  <ED_Log_SetupWithTradeError>Error in SetupWith trade substitution: {0}</ED_Log_SetupWithTradeError>
+  <ED_Log_TraderArrivalReplacement>Caravan from {0} arrived. Stock successfully substituted at spawn.</ED_Log_TraderArrivalReplacement>
+  <ED_Log_MapLootDebug>Loot points found: Storage={0}, Dining={1}, Bedroom={2}. Total items: {3}</ED_Log_MapLootDebug>
+  <ED_Log_RecoveryMapRemoval>Map {0} removed. Inhabitants recovered: {1} items, {2} silver.</ED_Log_RecoveryMapRemoval>
+  <ED_Log_PawnDepartedMap>Pawn from {0} left the map. Items saved to virtual stockpile.</ED_Log_PawnDepartedMap>
+  <ED_Log_GenderGeneratorError>Error in gender generator: {0}</ED_Log_GenderGeneratorError>
+  <ED_Log_Birth>[E&amp;D] A child was born to faction {0} ({1} adults).</ED_Log_Birth>
+  <ED_Log_VagrantSettle>[E&amp;D] {0} settled {1} (population replenished to {2}).</ED_Log_VagrantSettle>
+  <ED_Log_ExpansionSettle>[E&amp;D] {0} is expanding! New settlement {1} founded (pop replenished to {2}).</ED_Log_ExpansionSettle>
+
+  <!-- Trade Dialog Logs -->
+  <ED_Log_TradeDialogClose_Called>[E&amp;D] >>> Patch_Dialog_Trade_Close.Postfix called! &lt;&lt;&lt;</ED_Log_TradeDialogClose_Called>
+  <ED_Log_TraderNullOrPlayer>[E&amp;D] Trader is null or player, skipping.</ED_Log_TraderNullOrPlayer>
+  <ED_Log_TraderIsCaravan>[E&amp;D] This is a caravan, skipping (they carry goods).</ED_Log_TraderIsCaravan>
+  <ED_Log_ManagerNotFound>[E&amp;D] WorldPopulationManager not found!</ED_Log_ManagerNotFound>
+  <ED_Log_StockpileNotFound>[E&amp;D] Stockpile not found!</ED_Log_StockpileNotFound>
+  <ED_Log_StockBeforeClose>[E&amp;D] Stockpile before close: {0} items, Silver: {1}</ED_Log_StockBeforeClose>
+  <ED_Log_SettlementOwnerFound>[E&amp;D] Settlement owner found: {0}, Count: {1}</ED_Log_SettlementOwnerFound>
+  <ED_Log_ShipOwnerFound>[E&amp;D] Ship owner found: {0}, Count: {1}</ED_Log_ShipOwnerFound>
+  <ED_Log_ItemsToRecover>[E&amp;D] Found {0} items to return.</ED_Log_ItemsToRecover>
+  <ED_Log_SilverRecovered>[E&amp;D] Silver recovered: {0}</ED_Log_SilverRecovered>
+  <ED_Log_ItemRecovered>[E&amp;D] Item recovered: {0}, stack: {1}</ED_Log_ItemRecovered>
+  <ED_Log_RecoverSuccess>[E&amp;D] Success! Returned: {0} types, {1} silver. Stock after: {2}, Silver: {3}</ED_Log_RecoverSuccess>
+  <ED_Log_OwnerNotFound>[E&amp;D] owner is empty or not found! owner == null: {0}</ED_Log_OwnerNotFound>
+
+  <!-- Final Cleanups -->
+  <ED_Log_EconomyPathChosen>[E&amp;D Economy] Faction &lt;b&gt;{0}&lt;/b&gt; chose path: {1}</ED_Log_EconomyPathChosen>
+  <ED_Log_ItemGenerationError>[E&amp;D] Error generating item {0}: {1}. Replaced with silver.</ED_Log_ItemGenerationError>
+  <ED_Log_ItemProcessError>[E&amp;D] Failed to create or process item {0}: {1}</ED_Log_ItemProcessError>
 </LanguageData>

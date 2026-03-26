@@ -111,7 +111,7 @@ namespace EconomicsDemography
             }
             catch (Exception ex) 
             { 
-                Log.Error($"[E&D] Ошибка SetupWith: {ex}"); 
+                Log.Error("ED_Log_SetupWithTradeError".Translate(ex.ToString())); 
             }
         }
     }

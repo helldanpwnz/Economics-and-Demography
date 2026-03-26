@@ -65,7 +65,7 @@ namespace EconomicsDemography
                 }
             }
             
-            Log.Message($"[E&D] База {settlement.Name} уничтожена. Глобальный склад {settlement.Faction.Name} сокращен на 1/{basesCount} долю ресурсов.");
+            Log.Message(string.Format((string)"ED_Log_SettlementDestroyedReduction".Translate(), settlement.Name, settlement.Faction.Name, basesCount));
         }
     }
 }

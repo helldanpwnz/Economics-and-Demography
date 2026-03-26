@@ -17,7 +17,7 @@ namespace EconomicsDemography
         {
             if (isInitialized) return;
             logPath = Path.Combine(Application.persistentDataPath, "FinitePopulation.log");
-            try { File.WriteAllText(logPath, $"--- Запуск: {DateTime.Now} ---\n"); } catch { }
+            try { File.WriteAllText(logPath, $"--- Launch: {DateTime.Now} ---\n"); } catch { }
             isInitialized = true;
         }
 

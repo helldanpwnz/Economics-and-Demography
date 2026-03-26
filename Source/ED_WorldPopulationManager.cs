@@ -67,7 +67,7 @@ namespace EconomicsDemography
         private readonly List<string> economicArchetypes = new List<string> 
         { 
             "Miner", "Farmer", "Medical", "Technician", "Tailor", "Generalist",
-            "Warrior", "Alchemist", "Jeweler", "Hunter", "Lumberjack", "Rancher", "Fisherman", "Wholesale"
+            "Warrior", "Chemist", "Jeweler", "Hunter", "Lumberjack", "Rancher", "Fisherman", "Wholesale"
         };
 
         public WorldPopulationManager(World world) : base(world) { Instance = this; }
@@ -101,6 +101,12 @@ namespace EconomicsDemography
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 if (factionTraits == null) factionTraits = new Dictionary<int, string>();
+                
+                var keys = factionTraits.Keys.ToList();
+                foreach (var k in keys)
+                {
+                    if (factionTraits[k] == "Alchemist") factionTraits[k] = "Chemist";
+                }
             }
             
             if (Scribe.mode == LoadSaveMode.Saving || Scribe.mode == LoadSaveMode.LoadingVars)
@@ -196,7 +202,7 @@ namespace EconomicsDemography
 
                     factionTraits[fid] = AnalyzeTileForArchetype(homeTile, f);
 
-                    Log.Message($"<color=#77ffff>[E&D Экономика]</color> Фракция <b>{f.Name}</b> выбрала путь: <color=#ffee00>{factionTraits[fid]}</color>");
+                    Log.Message(string.Format((string)"ED_Log_EconomyPathChosen".Translate(), f.Name, factionTraits[fid]));
                 }
                 initialized.Add(fid);
             }
@@ -334,7 +340,7 @@ namespace EconomicsDemography
                         {
                             if (factionChildren[fid] >= 1.0f) factionChildren[fid] -= 1.0f;
                             else factionChildren[fid] = 0f;
-                            Log.Message($"[E&D] Фракция {f.Name} потеряла ребенка из-за гибели/потери беременной пешки ({contextPawn.Name}).");
+                            Log.Message(string.Format((string)"ED_Log_PawnDeathPregnancy".Translate(), f.Name, contextPawn.Name));
                         }
                     }
 
@@ -429,9 +435,12 @@ namespace EconomicsDemography
                     }
                     if (!f.defeated) DefeatFaction(f);
                     
-                    Find.LetterStack.ReceiveLetter("ED_FactionExtinctionTitle".Translate(f.Name), 
-                        "ED_FactionExtinctionText".Translate(f.Name), 
-                        LetterDefOf.NeutralEvent);
+                    if (EconomicsDemographyMod.Settings.enableNotifications)
+                    {
+                        Find.LetterStack.ReceiveLetter("ED_FactionExtinctionTitle".Translate(f.Name), 
+                            "ED_FactionExtinctionText".Translate(f.Name), 
+                            LetterDefOf.NeutralEvent);
+                    }
                 }
             }
             else
@@ -452,7 +461,10 @@ namespace EconomicsDemography
                     int adults = factionPopulation.TryGetValue(f.loadID, out int a) ? a : 0;
                     string status = (adults <= 0) ? "ED_VagrantsStatusChildren".Translate() : "ED_VagrantsStatusRemnants".Translate();
 
-                    Messages.Message("ED_VagrantsMessage".Translate(status, f.Name, totalLiving), MessageTypeDefOf.NeutralEvent);
+                    if (EconomicsDemographyMod.Settings.enableNotifications)
+                    {
+                        Messages.Message("ED_VagrantsMessage".Translate(status, f.Name, totalLiving), MessageTypeDefOf.NeutralEvent);
+                    }
                     vagrantWarningsSent.Add(f.loadID);
                 }
             }
@@ -463,7 +475,10 @@ namespace EconomicsDemography
             f.defeated = true;
             f.hidden = true; 
             factionPopulation[f.loadID] = 0;
-            Find.LetterStack.ReceiveLetter("ED_FactionDefeatTitle".Translate(f.Name), "ED_FactionDefeatText".Translate(f.Name), LetterDefOf.NeutralEvent, null, f);
+            if (EconomicsDemographyMod.Settings.enableNotifications)
+            {
+                Find.LetterStack.ReceiveLetter("ED_FactionDefeatTitle".Translate(f.Name), "ED_FactionDefeatText".Translate(f.Name), LetterDefOf.NeutralEvent, null, f);
+            }
         }
 
         private void CreateRuinsWithTimer(int tile, Faction faction)
@@ -562,7 +577,7 @@ namespace EconomicsDemography
                 }
             }
 
-            Log.Message($"[E&D] Стартовый запас {f.Name} ({trait}) готов. Капитал: {stock.GetTotalWealth():F1}$");
+            Log.Message(string.Format((string)"ED_Log_StartStockpile".Translate(), f.Name, trait, stock.GetTotalWealth().ToString("F1")));
         }
 
         public void AbsorbVanillaStock(Faction f, List<Thing> vanillaItems)
@@ -586,7 +601,7 @@ namespace EconomicsDemography
                 
                 lastRestockTick[fid] = currentTick;
                 if (absorbedCount > 0) 
-                    Log.Message($"[E&D] Ресток: Фракция {f.Name} поглотила {absorbedCount} простых товаров.");
+                    Log.Message(string.Format((string)"ED_Log_RestockAbsorbed".Translate(), f.Name, absorbedCount));
             }
         }
 

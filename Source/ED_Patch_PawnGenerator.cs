@@ -45,7 +45,7 @@ namespace EconomicsDemography
             }
             catch (Exception ex)
             {
-                Log.ErrorOnce($"[E&D] Ошибка в генераторе пола: {ex}", 94321);
+                Log.ErrorOnce("ED_Log_GenderGeneratorError".Translate(ex.ToString()), 94321);
             }
 
             return true;

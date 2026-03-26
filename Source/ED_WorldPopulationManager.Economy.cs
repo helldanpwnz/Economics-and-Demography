@@ -70,7 +70,7 @@ public override void WorldComponentTick()
                     {
                         float startingSilver = GetStockpile(f).silver;
                         initialWorldSilver += startingSilver; 
-                        Log.Message($"[E&D] Новая фракция {f.Name} прибавила к базовому лимиту свои начальные {startingSilver:F0}$.");
+                        Log.Message(string.Format((string)"ED_Log_NewFactionAdded".Translate(), f.Name, startingSilver.ToString("F0")));
                     }
                     knownFactionIDs.Add(f.loadID);
                 }
@@ -79,7 +79,7 @@ public override void WorldComponentTick()
             if (initialWorldSilver > totalSilverNow * 50f) 
             {
                 initialWorldSilver = -1f;
-                Log.Message("[E&D] Базовый лимит серебра был сброшен из-за аномалий.");
+                Log.Message("ED_Log_InflationReset".Translate());
             }
 
             // ПЛАВНАЯ КАЛИБРОВКА (РОСТ ЭКОНОМИКИ)
@@ -106,7 +106,7 @@ public override void WorldComponentTick()
 
             // Отладка для лога (синхронно с обновлением)
             if (Find.TickManager.TicksGame % Mathf.RoundToInt(EconomicsDemographyMod.Settings.updateIntervalHours * 2500f) == 0) 
-                Log.Message($"[E&D] Состояние экономики: Инфляция {currentInflation:P0}, Общее серебро {totalSilverNow:F0}.");
+                Log.Message(string.Format((string)"ED_Log_EconomyStatus".Translate(), currentInflation.ToString("P0"), totalSilverNow.ToString("F0")));
             
             foreach (var f in Find.FactionManager.AllFactionsListForReading)
             {
@@ -130,7 +130,7 @@ public override void WorldComponentTick()
                         if (inSpace && (trait == "Fisherman" || trait == "Farmer" || trait == "Rancher" || trait == "Hunter" || trait == "Lumberjack"))
                         {
                             factionTraits[fid] = AnalyzeTileForArchetype(settlement.Tile, f);
-                            Log.Message($"<color=orange>[E&D Fix]</color> Фракция {f.Name} в космосе имела роль {trait}. Пересчитано в: {factionTraits[fid]}");
+                            Log.Message(string.Format((string)"ED_Log_RoleReset".Translate(), f.Name, trait, factionTraits[fid].ToString()));
                         }
                     }
                 }
@@ -139,7 +139,7 @@ public override void WorldComponentTick()
 
         private void RunMonthlyCleanup()
         {
-            Log.Message("<color=cyan>[E&D] Ежемесячная проверка заброшенных проектов...</color>");
+            Log.Message("ED_Log_AbandonedCheck".Translate());
 
             int currentTick = Find.TickManager.TicksGame;
             int oneYearTicks = 3600000;
@@ -274,7 +274,7 @@ public override void WorldComponentTick()
             }
             
             this.globalPriceModifiers = newModifiers;
-            Log.Message($"[E&D] Рынок обновлен. Нас.: {totalWorldPop}, Множ. спроса: {demandMult:F2}");
+            Log.Message(string.Format((string)"ED_Log_MarketUpdated".Translate(), totalWorldPop, demandMult.ToString("F2")));
         }
 
         private void UpdatePlayerAssetsCache()

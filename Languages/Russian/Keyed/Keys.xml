@@ -19,6 +19,8 @@
   <ED_ExpansionSettings>=== Настройки экспансии ===</ED_ExpansionSettings>
   <ED_EnableExpansion>Разрешить экспансию (основание новых баз)</ED_EnableExpansion>
   <ED_EnablePopulationLoss>Разрешить потери населения (при нехватке жилья/еды)</ED_EnablePopulationLoss>
+  <ED_EnableNotifications>Включить игровые уведомления</ED_EnableNotifications>
+  <ED_EnableNotificationsDesc>Включить или выключить письма и сообщения о событиях симуляции (рождение, взросление, события фракций и т.д.). Технические логи остаются при любой настройке.</ED_EnableNotificationsDesc>
   <ED_ExpansionThreshold>Порог экспансии: {0}x</ED_ExpansionThreshold>
   <ED_BirthRates>=== Множители рождаемости ===</ED_BirthRates>
   <ED_Tech_Animal>Животные</ED_Tech_Animal>
@@ -105,7 +107,7 @@
   <ED_Trait_Technician>Техники</ED_Trait_Technician>
   <ED_Trait_Tailor>Портные</ED_Trait_Tailor>
   <ED_Trait_Warrior>Воины</ED_Trait_Warrior>
-  <ED_Trait_Alchemist>Алхимики</ED_Trait_Alchemist>
+  <ED_Trait_Chemist>Химики</ED_Trait_Chemist>
   <ED_Trait_Jeweler>Ювелиры</ED_Trait_Jeweler>
   <ED_Trait_Hunter>Охотники</ED_Trait_Hunter>
   <ED_Trait_Lumberjack>Лесорубы</ED_Trait_Lumberjack>
@@ -113,4 +115,47 @@
   <ED_Trait_Fisherman>Рыбаки</ED_Trait_Fisherman>
   <ED_Trait_Generalist>Универсалы</ED_Trait_Generalist>
   <ED_Trait_Wholesale>Оптовики</ED_Trait_Wholesale>
+
+  <!-- Новые логи -->
+  <ED_Log_PawnDeathPregnancy>Фракция {0} потеряла ребенка из-за гибели/потери беременной пешки ({1}).</ED_Log_PawnDeathPregnancy>
+  <ED_Log_StartStockpile>Стартовый запас {0} ({1}) готов. Капитал: {2}$</ED_Log_StartStockpile>
+  <ED_Log_RestockAbsorbed>Ресток: Фракция {0} поглотила {1} простых товаров.</ED_Log_RestockAbsorbed>
+  <ED_Log_NewFactionAdded>Новая фракция {0} прибавила к базовому лимиту свои начальные {1}$.</ED_Log_NewFactionAdded>
+  <ED_Log_EconomyStatus>Состояние экономики: Инфляция {0}, Общее серебро {1}.</ED_Log_EconomyStatus>
+  <ED_Log_RoleReset>Исправлено: Фракция {0} в космосе имела роль {1}. Пересчитано в: {2}.</ED_Log_RoleReset>
+  <ED_Log_AbandonedCheck>Ежемесячная проверка заброшенных проектов...</ED_Log_AbandonedCheck>
+  <ED_Log_MarketUpdated>Рынок обновлен. Нас.: {0}, Множ. спроса: {1}</ED_Log_MarketUpdated>
+  <ED_Log_ProductionPlanUpdated>План обновлен для {0} ({1}): {2}...</ED_Log_ProductionPlanUpdated>
+  <ED_Log_SettlementDestroyedReduction>База {0} уничтожена. Глобальный склад {1} сокращен на 1/{2} долю ресурсов.</ED_Log_SettlementDestroyedReduction>
+  <ED_Log_PawnLeftFaction>Пешка {0} покинула {1}. Популяция скорректирована (-1).</ED_Log_PawnLeftFaction>
+  <ED_Log_PawnJoinedFaction>Пешка {0} вступила в {1}. Популяция скорректирована (+1).</ED_Log_PawnJoinedFaction>
+  <ED_Log_SetupWithTradeError>Ошибка SetupWith при замене товаров: {0}</ED_Log_SetupWithTradeError>
+  <ED_Log_TraderArrivalReplacement>Караван {0} прибыл. Товары успешно заменены в момент спавна.</ED_Log_TraderArrivalReplacement>
+  <ED_Log_MapLootDebug>Точки лута: Склад={0}, Столовая={1}, Спальни={2}. Всего предметов: {3}</ED_Log_MapLootDebug>
+  <ED_Log_RecoveryMapRemoval>Карта {0} удалена. Жители забрали: {1} предм., {2} серебра.</ED_Log_RecoveryMapRemoval>
+  <ED_Log_PawnDepartedMap>Пешка из {0} покинула карту. Товары сохранены в виртуальный склад.</ED_Log_PawnDepartedMap>
+  <ED_Log_GenderGeneratorError>Ошибка в генераторе пола: {0}</ED_Log_GenderGeneratorError>
+  <ED_Log_Birth>[E&amp;D] У фракции {0} родился ребенок ({1} взр.).</ED_Log_Birth>
+  <ED_Log_VagrantSettle>[E&amp;D] {0} основывает поселение {1} (насел. восполнено до {2}).</ED_Log_VagrantSettle>
+  <ED_Log_ExpansionSettle>[E&amp;D] {0} расширяется! Новое поселение {1} основано (насел. восполнено до {2}).</ED_Log_ExpansionSettle>
+
+  <!-- Логи окна торговли -->
+  <ED_Log_TradeDialogClose_Called>[E&amp;D] >>> Patch_Dialog_Trade_Close.Postfix вызван! &lt;&lt;&lt;</ED_Log_TradeDialogClose_Called>
+  <ED_Log_TraderNullOrPlayer>[E&amp;D] Торговец null или игрок, пропускаем.</ED_Log_TraderNullOrPlayer>
+  <ED_Log_TraderIsCaravan>[E&amp;D] Это караван, пропускаем (они унесут вещи).</ED_Log_TraderIsCaravan>
+  <ED_Log_ManagerNotFound>[E&amp;D] WorldPopulationManager не найден!</ED_Log_ManagerNotFound>
+  <ED_Log_StockpileNotFound>[E&amp;D] Stockpile не найден!</ED_Log_StockpileNotFound>
+  <ED_Log_StockBeforeClose>[E&amp;D] Склад до закрытия: {0} поз., Серебро: {1}</ED_Log_StockBeforeClose>
+  <ED_Log_SettlementOwnerFound>[E&amp;D] Поселение, owner найден: {0}, Count: {1}</ED_Log_SettlementOwnerFound>
+  <ED_Log_ShipOwnerFound>[E&amp;D] Корабль, owner найден: {0}, Count: {1}</ED_Log_ShipOwnerFound>
+  <ED_Log_ItemsToRecover>[E&amp;D] Найдено {0} предметов для возврата.</ED_Log_ItemsToRecover>
+  <ED_Log_SilverRecovered>[E&amp;D] Возвращено серебра: {0}</ED_Log_SilverRecovered>
+  <ED_Log_ItemRecovered>[E&amp;D] Возвращен предмет: {0}, стек: {1}</ED_Log_ItemRecovered>
+  <ED_Log_RecoverSuccess>[E&amp;D] Успех! Возвращено: {0} типов, {1} серебра. Склад после: {2}, Серебро: {3}</ED_Log_RecoverSuccess>
+  <ED_Log_OwnerNotFound>[E&amp;D] owner пуст или не найден! owner == null: {0}</ED_Log_OwnerNotFound>
+
+  <!-- Финальные чистки -->
+  <ED_Log_EconomyPathChosen>[E&amp;D Экономика] Фракция &lt;b&gt;{0}&lt;/b&gt; выбрала путь: {1}</ED_Log_EconomyPathChosen>
+  <ED_Log_ItemGenerationError>[E&amp;D] Ошибка генерации предмета {0}: {1}. Замена на серебро.</ED_Log_ItemGenerationError>
+  <ED_Log_ItemProcessError>[E&amp;D] Не удалось создать или обработать предмет {0}: {1}</ED_Log_ItemProcessError>
 </LanguageData>

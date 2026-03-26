@@ -322,7 +322,7 @@ namespace EconomicsDemography
                                         } 
                                         catch (Exception ex)
                                         {
-                                            Log.Warning($"[E&D] Ошибка генерации предмета {def.defName}: {ex.Message}. Замена на серебро.");
+                                            Log.Warning(string.Format((string)"ED_Log_ItemGenerationError".Translate(), def.defName, ex.Message));
                                             t = ThingMaker.MakeThing(ThingDefOf.Silver);
                                             t.stackCount = Mathf.Clamp(Mathf.RoundToInt(def.BaseMarketValue), 1, 500);
                                             things.Add(t);
@@ -351,7 +351,7 @@ namespace EconomicsDemography
                         }
                         catch (Exception ex)
                         {
-                            Log.Warning($"[E&D] Не удалось создать или обработать предмет {kvp.Key}: {ex.Message}");
+                            Log.Warning(string.Format((string)"ED_Log_ItemProcessError".Translate(), kvp.Key, ex.Message));
                         }
                     }
                 }

@@ -64,7 +64,7 @@ namespace EconomicsDemography
 
             Patch_TradeSession_Setup.processedCaravans.Add(traderID);
             
-            Log.Message($"[E&D] Караван {parms.faction.Name} прибыл на карту. Товары успешно заменены в момент спавна.");
+            Log.Message(string.Format((string)"ED_Log_TraderArrivalReplacement".Translate(), parms.faction.Name));
         }
     }    
 }

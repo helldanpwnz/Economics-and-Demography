@@ -137,7 +137,7 @@ namespace EconomicsDemography
             diningCells.Shuffle();
             bedroomCells.Shuffle();
 
-            Log.Message($"[E&D Debug] Найдено мест для лута: Склад={storageCells.Count}, Еда={diningCells.Count}, Спальни={bedroomCells.Count}. Всего предметов: {loot.Count}");
+            Log.Message("ED_Log_MapLootDebug".Translate(storageCells.Count, diningCells.Count, bedroomCells.Count, loot.Count));
 
             List<Thing> foodLoot = new List<Thing>();
             List<Thing> weaponLoot = new List<Thing>();

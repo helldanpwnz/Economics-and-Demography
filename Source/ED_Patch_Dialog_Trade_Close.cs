@@ -18,47 +18,47 @@ namespace EconomicsDemography
         [HarmonyPostfix]
         static void Postfix()
         {
-            Log.Message("[E&D] >>> Patch_Dialog_Trade_Close.Postfix вызван! <<<");
+            Log.Message("ED_Log_TradeDialogClose_Called".Translate());
             
             if (TradeSession.trader == null || TradeSession.trader.Faction == null || TradeSession.trader.Faction.IsPlayer) 
             {
-                Log.Message("[E&D] Торговец null или игрок, пропускаем");
+                Log.Message("ED_Log_TraderNullOrPlayer".Translate());
                 return;
             }
 
             bool isCaravan = TradeSession.trader is Pawn p && p.Map != null;
             if (isCaravan)
             {
-                Log.Message("[E&D] Это караван, пропускаем (они унесут вещи)");
+                Log.Message("ED_Log_TraderIsCaravan".Translate());
                 return;
             }
 
             var manager = Find.World.GetComponent<WorldPopulationManager>();
             if (manager == null) 
             {
-                Log.Error("[E&D] WorldPopulationManager не найден!");
+                Log.Error("ED_Log_ManagerNotFound".Translate());
                 return;
             }
             
             var stock = manager.GetStockpile(TradeSession.trader.Faction);
             if (stock == null)
             {
-                Log.Error("[E&D] Stockpile не найден!");
+                Log.Error("ED_Log_StockpileNotFound".Translate());
                 return;
             }
 
-            Log.Message($"[E&D] Склад до закрытия: {stock.inventory?.Count ?? 0} поз., Серебро: {stock.silver}");
+            Log.Message("ED_Log_StockBeforeClose".Translate(stock.inventory?.Count ?? 0, stock.silver));
 
             ThingOwner owner = null;
             if (TradeSession.trader is Settlement sett && sett.trader != null)
             {
                 owner = Traverse.Create(sett.trader).Field("stock").GetValue<ThingOwner>();
-                Log.Message($"[E&D] Это поселение, owner найден: {owner != null}, Count: {owner?.Count ?? 0}");
+                Log.Message(string.Format((string)"ED_Log_SettlementOwnerFound".Translate(), owner != null, owner?.Count ?? 0));
             }
             else if (TradeSession.trader is TradeShip ship)
             {
                 owner = ship.GetDirectlyHeldThings();
-                Log.Message($"[E&D] Это корабль, owner найден: {owner != null}, Count: {owner?.Count ?? 0}");
+                Log.Message(string.Format((string)"ED_Log_ShipOwnerFound".Translate(), owner != null, owner?.Count ?? 0));
             }
 
             if (owner != null && owner.Count > 0)
@@ -72,7 +72,7 @@ namespace EconomicsDemography
                     things.Add(t);
                 }
                 
-                Log.Message($"[E&D] Найдено {things.Count} предметов для возврата");
+                Log.Message("ED_Log_ItemsToRecover".Translate(things.Count));
 
                 foreach (Thing t in things)
                 {
@@ -82,7 +82,7 @@ namespace EconomicsDemography
                     {
                         stock.silver += t.stackCount;
                         silverRecovered += t.stackCount;
-                        Log.Message($"[E&D] Возвращено серебра: {t.stackCount}");
+                        Log.Message("ED_Log_SilverRecovered".Translate(t.stackCount));
                     }
                     else if (t.def.category == ThingCategory.Item)
                     {
@@ -93,17 +93,17 @@ namespace EconomicsDemography
                         
                         stock.maxSlots = oldMax;
                         itemsRecovered++;
-                        Log.Message($"[E&D] Возвращен предмет: {t.def.defName}, стек: {t.stackCount}");
+                        Log.Message("ED_Log_ItemRecovered".Translate(t.def.defName, t.stackCount));
                     }
                 }
                 
                 owner.ClearAndDestroyContents();
                 
-                Log.Message($"[E&D] Успех! Возвращено: {itemsRecovered} типов, {silverRecovered} серебра. Склад после: {stock.inventory?.Count ?? 0}, Серебро: {stock.silver}");
+                Log.Message("ED_Log_RecoverSuccess".Translate(itemsRecovered, silverRecovered, (stock.inventory?.Count ?? 0), stock.silver));
             }
             else
             {
-                Log.Warning($"[E&D] owner пуст или не найден! owner == null: {owner == null}");
+                Log.Warning(string.Format((string)"ED_Log_OwnerNotFound".Translate(), owner == null));
             }
         }
     }

@@ -31,7 +31,7 @@ namespace EconomicsDemography
             {
                 // Уменьшаем популяцию, так как пешка покинула ряды фракции (вербовка, переход)
                 manager.ModifyPopulation(oldFaction, -1, __instance.gender, __instance);
-                Log.Message($"[E&D] Пешка {__instance.Name} покинула {oldFaction.Name}. Популяция скорректирована (-1).");
+                Log.Message(string.Format((string)"ED_Log_PawnLeftFaction".Translate(), __instance.NameShortColored, oldFaction.Name));
             }
 
             // 2. Прирост в новой фракции (если она не игрок и не скрытая)
@@ -39,7 +39,7 @@ namespace EconomicsDemography
             {
                 // Увеличиваем популяцию, так как пешка вступила во фракцию (например, деффект или переход между ИИ фракциями)
                 manager.ModifyPopulation(newFaction, 1, __instance.gender, __instance);
-                Log.Message($"[E&D] Пешка {__instance.Name} вступила в {newFaction.Name}. Популяция скорректирована (+1).");
+                Log.Message(string.Format((string)"ED_Log_PawnJoinedFaction".Translate(), __instance.NameShortColored, newFaction.Name));
             }
         }
     }
