@@ -33,7 +33,7 @@ public override void WorldComponentTick()
     }
 
     int currentTick = Find.TickManager.TicksGame;
-    int interval = Mathf.RoundToInt(EconomicsDemographyMod.Settings.updateIntervalHours * 25f);
+    int interval = Mathf.RoundToInt(EconomicsDemographyMod.Settings.updateIntervalHours * 2500f);
 
     // Выполняем согласно настройкам (интервал в часах -> тики)
     if (currentTick > 0 && currentTick % interval == 0)

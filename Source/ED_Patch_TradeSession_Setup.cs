@@ -16,10 +16,12 @@ namespace EconomicsDemography
     public static class Patch_TradeSession_Setup
     {
         public static HashSet<int> processedCaravans = new HashSet<int>();
+        public static HashSet<int> existingPawnIds = new HashSet<int>();
 
         [HarmonyPrefix]
         static void Prefix(ITrader newTrader, Pawn newPlayerNegotiator)
         {
+            existingPawnIds.Clear();
             try
             {
                 if (newTrader == null || newTrader.Faction == null || newTrader.Faction.IsPlayer) return;
@@ -33,9 +35,14 @@ namespace EconomicsDemography
                 {
                     var trackerData = Traverse.Create(sett.trader);
 
-                    trackerData.Field("lastStockGenerationTick").SetValue(Find.TickManager.TicksGame);
-
                     ThingOwner owner = trackerData.Field("stock").GetValue<ThingOwner>();
+
+                    // Если инвентарь пуст или устарел — принудительно генерируем ванильный запас (с рабами)
+                    if (owner == null || owner.Count == 0 || Find.TickManager.TicksGame - trackerData.Field("lastStockGenerationTick").GetValue<int>() > 600000)
+                    {
+                        trackerData.Method("RegenerateStock").GetValue();
+                        owner = trackerData.Field("stock").GetValue<ThingOwner>();
+                    }
                     
                     if (owner == null)
                     {
@@ -43,7 +50,24 @@ namespace EconomicsDemography
                         trackerData.Field("stock").SetValue(owner);
                     }
 
-                    owner.ClearAndDestroyContents();
+                    // Запоминаем ID существ, которые уже были у торговца (чтобы не начислять за них деньги дважды)
+                    foreach (Thing t in owner)
+                    {
+                        if (t is Pawn pawn) existingPawnIds.Add(pawn.thingIDNumber);
+                    }
+
+                    // Удаляем только предметы, сохраняя рабов и животных
+                    for (int i = owner.Count - 1; i >= 0; i--)
+                    {
+                        if (!(owner[i] is Pawn))
+                        {
+                            Thing t = owner[i];
+                            owner.Remove(t);
+                            t.Destroy();
+                        }
+                    }
+
+                    trackerData.Field("lastStockGenerationTick").SetValue(Find.TickManager.TicksGame);
 
                     if (virtStock.inventory.Count == 0 && virtStock.silver <= 1000)
                     {

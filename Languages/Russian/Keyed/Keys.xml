@@ -21,6 +21,8 @@
   <ED_EnablePopulationLoss>Разрешить потери населения (при нехватке жилья/еды)</ED_EnablePopulationLoss>
   <ED_EnableNotifications>Включить игровые уведомления</ED_EnableNotifications>
   <ED_EnableNotificationsDesc>Включить или выключить письма и сообщения о событиях симуляции (рождение, взросление, события фракций и т.д.). Технические логи остаются при любой настройке.</ED_EnableNotificationsDesc>
+  <ED_EnableCivilianSpawning>Спавн мирных жителей (дети/старики)</ED_EnableCivilianSpawning>
+  <ED_EnableCivilianSpawningDesc>Если включено — в поселениях фракций на карте будут появляться дети и старики, соответствующие виртуальной демографии фракции. Это делает мир более живым, а набеги на базы — более реалистичными.</ED_EnableCivilianSpawningDesc>
   <ED_ExpansionThreshold>Порог экспансии: {0}x</ED_ExpansionThreshold>
   <ED_BirthRates>=== Множители рождаемости ===</ED_BirthRates>
   <ED_Tech_Animal>Животные</ED_Tech_Animal>

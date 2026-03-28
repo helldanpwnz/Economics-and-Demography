@@ -97,7 +97,25 @@ namespace EconomicsDemography
                     }
                 }
                 
-                owner.ClearAndDestroyContents();
+                // Возвращаем капитал только за НОВЫХ рабов (которых купил ИИ у игрока)
+                float newAssetsValue = 0;
+                foreach (Thing t in owner)
+                {
+                    if (t is Pawn pawn && !Patch_TradeSession_Setup.existingPawnIds.Contains(pawn.thingIDNumber))
+                        newAssetsValue += pawn.MarketValue;
+                }
+                stock.silver += Mathf.RoundToInt(newAssetsValue);
+
+                // Вместо полной очистки удаляем только товары, сохраняя живых существ
+                for (int i = owner.Count - 1; i >= 0; i--)
+                {
+                    if (!(owner[i] is Pawn))
+                    {
+                        Thing t = owner[i];
+                        owner.Remove(t);
+                        t.Destroy();
+                    }
+                }
                 
                 Log.Message("ED_Log_RecoverSuccess".Translate(itemsRecovered, silverRecovered, (stock.inventory?.Count ?? 0), stock.silver));
             }

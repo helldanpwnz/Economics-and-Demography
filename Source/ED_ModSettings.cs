@@ -12,6 +12,7 @@ namespace EconomicsDemography
         public bool enableExpansion = true;
         public bool enablePopulationLoss = true;
         public bool enableNotifications = true;
+        public bool enableCivilianSpawning = true;
         public float homeostasisEfficiency = 0.001f;
         private Vector2 scrollPosition = Vector2.zero;
         public bool enableLogs = false;
@@ -60,6 +61,7 @@ namespace EconomicsDemography
             Scribe_Values.Look(ref enableExpansion, "enableExpansion", true);
             Scribe_Values.Look(ref enablePopulationLoss, "enablePopulationLoss", true);
             Scribe_Values.Look(ref enableNotifications, "enableNotifications", true);
+            Scribe_Values.Look(ref enableCivilianSpawning, "enableCivilianSpawning", true);
             Scribe_Values.Look(ref homeostasisEfficiency, "homeostasisEfficiency", 0.001f);
             Scribe_Values.Look(ref enableLogs, "enableLogs", false);
             Scribe_Values.Look(ref capAnimal, "capAnimal", 150f);
@@ -140,6 +142,7 @@ namespace EconomicsDemography
             prodArchotech = 1f;
             expansionThresholdFactor = 1.1f;
             enableExpansion = true;
+            enableCivilianSpawning = true;
             enablePopulationLoss = true;
             enableNotifications = true;
             updateIntervalHours = 24f;
@@ -169,6 +172,7 @@ namespace EconomicsDemography
             updateIntervalHours = listing.Slider(updateIntervalHours, 1f, 300f);
             
             listing.CheckboxLabeled("ED_EnableNotifications".Translate(), ref enableNotifications, "ED_EnableNotificationsDesc".Translate());
+            listing.CheckboxLabeled("ED_EnableCivilianSpawning".Translate(), ref enableCivilianSpawning, "ED_EnableCivilianSpawningDesc".Translate());
 
             listing.Gap(6f);
             listing.Label("ED_CollapseThreshold".Translate((collapseThresholdFactor * 100f).ToString("F0")));

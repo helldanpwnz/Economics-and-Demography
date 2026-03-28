@@ -21,6 +21,8 @@
   <ED_EnablePopulationLoss>Enable population loss (starvation/no home)</ED_EnablePopulationLoss>
   <ED_EnableNotifications>Enable in-game notifications</ED_EnableNotifications>
   <ED_EnableNotificationsDesc>Enable or disable letters and messages (births, maturation, faction events, etc.). Only technical logs remain if disabled.</ED_EnableNotificationsDesc>
+  <ED_EnableCivilianSpawning>Spawn civilians (children/elderly)</ED_EnableCivilianSpawning>
+  <ED_EnableCivilianSpawningDesc>If enabled, children and elderly pawns will appear in faction settlements on the map, reflecting the virtual demographic stats. This makes base raids feel more populated and realistic.</ED_EnableCivilianSpawningDesc>
   <ED_ExpansionThreshold>Expansion threshold factor: {0}x</ED_ExpansionThreshold>
   <ED_BirthRates>=== Birth Rates ===</ED_BirthRates>
   <ED_Tech_Animal>Animal</ED_Tech_Animal>
