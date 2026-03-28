@@ -32,9 +32,25 @@ namespace EconomicsDemography
             try
             {
                 int fid = request.Faction.loadID;
-                
+                if (!manager.factionPopulation.ContainsKey(fid)) return true;
+
+                // Защита от конфликтов с бесполыми расами, HAR и монополыми расами
+                if (request.KindDef != null)
+                {
+                    if (request.KindDef.fixedGender.HasValue) return true;
+                    
+                    if (request.KindDef.race != null)
+                    {
+                        if (request.KindDef.race.race != null && !request.KindDef.race.race.hasGenders) return true;
+                        
+                        // Если это инопланетная раса (HAR), мы не должны вмешиваться в пол,
+                        // потому что у них свои настройки вероятности (maleGenderProbability) и текстур!
+                        if (request.KindDef.race.GetType().Name.Contains("AlienRace")) return true;
+                    }
+                }
+
                 int females = manager.factionFemales.TryGetValue(fid, out int f) ? f : 0;
-                int population = manager.factionPopulation.TryGetValue(fid, out int p) ? p : 1;
+                int population = manager.factionPopulation[fid];
                 
                 float total = Mathf.Max(1, population);
                 float femaleChance = (float)females / total;

@@ -187,7 +187,9 @@ namespace EconomicsDemography
                 // Стартовое серебро теперь генерируется внутри GenerateStartingStock и масштабируется от поселений, а не от голов населения.
                 GetStockpile(f); 
                 
-                float femaleRatio = Rand.Range(0.45f, 0.55f); 
+                float targetFR = GetFactionRealFemaleRatio(f);
+                float femaleRatio = targetFR >= 0f ? targetFR : Rand.Range(0.45f, 0.55f); 
+
                 factionFemales[fid] = Mathf.RoundToInt(baseAdults * femaleRatio);
                 
                 maturationBuffer[fid] = 0f;
@@ -404,8 +406,15 @@ namespace EconomicsDemography
                     if (!handled)
                     {
                         factionPopulation[fid]++;
-                        if (gender == Gender.Female || (gender == null && Rand.Value < 0.51f)) 
-                            factionFemales[fid]++;
+                        float chance = 0.51f;
+                        if (gender == Gender.Female) chance = 1.0f;
+                        else if (gender == Gender.Male) chance = 0.0f;
+                        else
+                        {
+                            float realR = GetFactionRealFemaleRatio(f);
+                            chance = realR >= 0f ? realR : ((float)factionFemales[fid] / Mathf.Max(1f, (float)(factionPopulation[fid] - 1)));
+                        }
+                        if (Rand.Value < chance) factionFemales[fid]++;
                     }
                 }
             }
@@ -651,6 +660,37 @@ namespace EconomicsDemography
         {
             if (pawn?.health?.hediffSet == null) return false;
             return pawn.health.hediffSet.hediffs.Any(h => h.def.defName == "Pregnant" || h.def.defName == "PregnancyHuman" || h.def.defName == "Pregnancy");
+        }
+
+        public float GetFactionRealFemaleRatio(Faction f)
+        {
+            float targetFemaleRatio = -1f;
+            try
+            {
+                PawnKindDef kind = f.def.basicMemberKind;
+                if (kind == null && f.def.pawnGroupMakers != null)
+                {
+                    var options = f.def.pawnGroupMakers.SelectMany(gm => gm.options ?? new List<PawnGenOption>())
+                        .OrderByDescending(o => o.selectionWeight).ToList();
+                    
+                    var specificOpt = options.FirstOrDefault(o => o.kind?.fixedGender.HasValue == true || o.kind?.race?.GetType().Name.Contains("AlienRace") == true);
+                    if (specificOpt != null) kind = specificOpt.kind;
+                    else kind = options.FirstOrDefault()?.kind;
+                }
+
+                if (kind != null)
+                {
+                    if (kind.fixedGender.HasValue) 
+                        targetFemaleRatio = kind.fixedGender.Value == Gender.Female ? 1f : 0f;
+                    else if (kind.race?.GetType().Name.Contains("AlienRace") == true)
+                    {
+                        float maleProb = Traverse.Create(kind.race).Field("alienRace").Field("generalSettings").Field("maleGenderProbability").GetValue<float>();
+                        targetFemaleRatio = Mathf.Clamp01(1f - maleProb);
+                    }
+                }
+            }
+            catch { }
+            return targetFemaleRatio;
         }
     }
 }

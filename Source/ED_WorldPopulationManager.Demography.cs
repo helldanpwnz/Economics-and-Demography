@@ -231,7 +231,11 @@ namespace EconomicsDemography
                 // === 4. ДЕМОГРАФИЯ (ПАРЫ И РОЖДАЕМОСТЬ) ===
                 int females = factionFemales.TryGetValue(fid, out int fem) ? fem : 0;
                 int males = Mathf.Max(0, adults - females);
-                int pairs = Math.Min(males, females); 
+                
+                // Для монополых рас (партеногенез, клонирование и т.д.) все взрослые считаются «парами»
+                float realFR = GetFactionRealFemaleRatio(f);
+                bool isMonoGender = (realFR >= 0.95f || realFR <= 0.05f) && realFR >= 0f;
+                int pairs = isMonoGender ? adults : Math.Min(males, females); 
                 
                 float maxChildRatio = 0.5f; 
 
@@ -278,7 +282,8 @@ namespace EconomicsDemography
                 if (totalBases > 0 && Find.TickManager.TicksGame > 1800000)
                 {
                     bool shouldCollapse = false;
-                    float ratio = (float)totalLiving / totalCapacity;
+                    int workingPop = adults + Mathf.CeilToInt(currentElders); // Дети не поддерживают базу
+                    float ratio = (float)workingPop / totalCapacity;
 
                     float threshold = EconomicsDemographyMod.Settings.collapseThresholdFactor;
 
@@ -512,7 +517,8 @@ namespace EconomicsDemography
                     int lostCount = lastBaseCount[fid] - groundBases;
                     for (int i = 0; i < lostCount; i++)
                     {
-                        int popLoss = Mathf.RoundToInt(totalLiving * Rand.Range(0.15f, 0.25f));
+                        int currentLiving = GetTotalLiving(f);
+                        int popLoss = Mathf.RoundToInt(currentLiving * Rand.Range(0.15f, 0.25f));
                         popLoss = Mathf.Max(5, popLoss);
                         
                         if ((lastBaseCount[fid] - i) > 1)

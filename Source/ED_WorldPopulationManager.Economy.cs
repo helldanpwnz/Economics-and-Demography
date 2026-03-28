@@ -134,6 +134,23 @@ public override void WorldComponentTick()
                         }
                     }
                 }
+                
+                // АВТО-ФИКС: Исправление демографии для кастомных/монополых рас (включая HAR) для старых сохранений
+                if (factionPopulation.ContainsKey(fid))
+                {
+                    float targetFR = GetFactionRealFemaleRatio(f);
+                    if (targetFR >= 0f)
+                    {
+                        int pop = factionPopulation[fid];
+                        int currentFemales = factionFemales.TryGetValue(fid, out int fem) ? fem : 0;
+                        int targetFemales = Mathf.RoundToInt(pop * targetFR);
+                        
+                        if (Mathf.Abs(currentFemales - targetFemales) >= 1)
+                        {
+                            factionFemales[fid] = targetFemales;
+                        }
+                    }
+                }
             }
         }
 
