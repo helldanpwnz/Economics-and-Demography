@@ -219,11 +219,12 @@ namespace EconomicsDemography
                 int sCount = GetSettlementCountSafe(__0);
                 int oneBaseCap = GetCapacitySafe(f);
 
-                // СТРОГАЯ ЭКСПАНСИЯ: фракция не может строить новую базу, 
-                // если ее население не покрывает текущие базы + ту, что они хотят построить.
-                if (totalLiving < (sCount + 1) * oneBaseCap)
+                // ГИБКАЯ ЭКСПАНСИЯ (60%): фракция может строить новую базу, 
+                // если ее население покрывает хотя бы 60% от вместимости (всех баз + новой).
+                int needTotal = (sCount + 1) * oneBaseCap;
+                if (totalLiving < (int)(needTotal * 0.6f))
                 {
-                    Log.Message($"[E&D] BLOCKED expansion for {f.Name}: pop {totalLiving} / need {(sCount + 1) * oneBaseCap} for next base");
+                    Log.Message($"[E&D] BLOCKED expansion for {f.Name}: pop {totalLiving} / need {needTotal} (cap-min 60%: {(int)(needTotal * 0.6f)})");
                     return false;
                 }
             }

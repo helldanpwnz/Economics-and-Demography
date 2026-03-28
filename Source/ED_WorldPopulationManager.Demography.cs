@@ -29,7 +29,8 @@ namespace EconomicsDemography
                 VirtualStockpile aggStock = GetStockpile(aggressor);
                 float currentWealth = aggStock.GetTotalWealth();
 
-                if (currentWealth <= 50f) continue;
+                float maintenance = GetMaintenanceCost(aggressor);
+                if (currentWealth < (maintenance * 20f)) continue;
 
                 float kidnapCost = 10f; 
 
@@ -161,18 +162,17 @@ namespace EconomicsDemography
                 switch (f.def.techLevel)
                 {
                     case TechLevel.Animal:
-                    case TechLevel.Neolithic:   costPerPerson = 0.04f; break;  
+                    case TechLevel.Neolithic:   costPerPerson = 0.05f; break;  
                     case TechLevel.Medieval:    costPerPerson = 0.10f; break;
-                    case TechLevel.Industrial:  costPerPerson = 0.27f; break; 
-                    case TechLevel.Spacer:      costPerPerson = 0.36f; break; 
-                    case TechLevel.Ultra:       costPerPerson = 0.42f; break; 
-                    case TechLevel.Archotech:   costPerPerson = 0.60f; break; 
+                    case TechLevel.Industrial:  costPerPerson = 0.25f; break; 
+                    case TechLevel.Spacer:      costPerPerson = 0.32f; break; 
+                    case TechLevel.Ultra:       costPerPerson = 0.36f; break; 
+                    case TechLevel.Archotech:   costPerPerson = 0.45f; break; 
                 }
 
-                float baseMaintenance = 0.25f * totalBases;
-                
                 float consumers = (adults * 1.0f) + (currentKids * 0.5f) + (currentElders * 0.7f);
-                
+                float adminOverhead = 1.0f + (consumers / 10000.0f);
+
                 float techConsMult = 1f;
                 var s = EconomicsDemographyMod.Settings;
                 switch (f.def.techLevel)
@@ -186,7 +186,7 @@ namespace EconomicsDemography
                     case TechLevel.Archotech:   techConsMult = s.consArchotech; break;
                 }
                 
-                float totalDailyCost = ((consumers * costPerPerson) + baseMaintenance) * techConsMult;
+                float totalDailyCost = (consumers * costPerPerson * adminOverhead) * techConsMult;
 
                 int dayOfYear = GenDate.DayOfYear(Find.TickManager.TicksGame, 0f);
                 if (dayOfYear >= 45 || dayOfYear < 15) totalDailyCost *= 1.2f; 
@@ -358,6 +358,9 @@ namespace EconomicsDemography
                 }
 
                 dailyBirths *= popLimitMult;
+                
+                // ГАРАНТИЯ: Если капитал меньше 20x содержания - рождаемость 0
+                if (wealthAvailable < (totalDailyCost * 20f)) dailyBirths = 0f;
 
                 factionChildren[fid] += dailyBirths;
 
@@ -575,7 +578,8 @@ namespace EconomicsDemography
 
                         float currentWealth = stock.GetTotalWealth();
 
-                        if (totalLiving >= finalPopRequired && currentWealth >= expansionCost)
+                        // ЭКСПАНСИЯ (Требует 20x содержания)
+                        if (totalLiving >= finalPopRequired && currentWealth >= expansionCost && currentWealth >= (totalDailyCost * 20f))
                         {
                             float overcrowding = (float)totalLiving / totalCapacity;
                             float expansionChance = Mathf.Clamp(0.10f * overcrowding, 0.10f, 0.40f);
@@ -642,6 +646,40 @@ namespace EconomicsDemography
             }
             
             ProcessVirtualTrade(factions);
+        }
+
+        public float GetMaintenanceCost(Faction f)
+        {
+            if (f == null || f.loadID < 0) return 0f;
+            int adults = GetPopulation(f);
+            int fid = f.loadID;
+            float kVal = factionChildren.TryGetValue(fid, out float k) ? k : 0f;
+            float eVal = factionElders.TryGetValue(fid, out float e) ? e : 0f;
+            
+            float costPerPerson = 0.2f; 
+            switch (f.def.techLevel) {
+                case TechLevel.Animal:
+                case TechLevel.Neolithic: costPerPerson = 0.05f; break;
+                case TechLevel.Medieval:  costPerPerson = 0.10f; break;
+                case TechLevel.Industrial: costPerPerson = 0.25f; break;
+                case TechLevel.Spacer: costPerPerson = 0.32f; break;
+                case TechLevel.Ultra: costPerPerson = 0.36f; break;
+                case TechLevel.Archotech: costPerPerson = 0.45f; break;
+            }
+            float consumers = adults + (kVal * 0.5f) + (eVal * 0.7f);
+            float adminOverhead = 1.0f + (consumers / 10000.0f);
+            float techMult = 1f;
+            var s = EconomicsDemographyMod.Settings;
+            switch (f.def.techLevel) {
+                case TechLevel.Animal: techMult = s.consAnimal; break;
+                case TechLevel.Neolithic: techMult = s.consNeolithic; break;
+                case TechLevel.Medieval: techMult = s.consMedieval; break;
+                case TechLevel.Industrial: techMult = s.consIndustrial; break;
+                case TechLevel.Spacer: techMult = s.consSpacer; break;
+                case TechLevel.Ultra: techMult = s.consUltra; break;
+                case TechLevel.Archotech: techMult = s.consArchotech; break;
+            }
+            return consumers * costPerPerson * adminOverhead * techMult;
         }
     }
 }
