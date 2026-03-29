@@ -143,7 +143,6 @@ namespace EconomicsDemography
         public int GetPopulation(Faction f)
         {
             if (f == null || f.IsPlayer || f.def.hidden || !f.def.humanlikeFaction) return -1;
-            if (f.leader == null && f.def.techLevel > TechLevel.Animal) return -1;
             int fid = f.loadID;
 
             // 1. ПЕРВИЧНАЯ ИНИЦИАЛИЗАЦИЯ (Для новых фракций)
@@ -230,6 +229,13 @@ namespace EconomicsDemography
             if (!maturationBuffer.ContainsKey(fid))  maturationBuffer[fid] = 0f;
             if (!agingBuffer.ContainsKey(fid))       agingBuffer[fid] = 0f;
             if (!lastBaseCount.ContainsKey(fid))     lastBaseCount[fid] = 0;
+
+            // Санация данных (фикс багов при потере лидеров и перекосах пола)
+            if (factionPopulation[fid] < 0) factionPopulation[fid] = 0;
+            if (factionFemales[fid] < 0) factionFemales[fid] = 0;
+            if (factionFemales[fid] > factionPopulation[fid]) factionFemales[fid] = factionPopulation[fid];
+            if (factionChildren[fid] < 0) factionChildren[fid] = 0f;
+            if (factionElders[fid] < 0) factionElders[fid] = 0f;
         }
 
         public void SilentRestorePopulation(Faction f, int targetPop)
@@ -257,7 +263,6 @@ namespace EconomicsDemography
         public void ModifyPopulation(Faction f, int amount, Gender? gender = null, Pawn contextPawn = null, PopulationPool pool = PopulationPool.Random)
         {
             if (f == null || f.IsPlayer || f.loadID < 0 || f.def.hidden || !f.def.humanlikeFaction) return;
-            if (f.leader == null && f.def.techLevel > TechLevel.Animal) return;
             int fid = f.loadID;
 
             if (!factionPopulation.ContainsKey(fid)) factionPopulation[fid] = 0;
@@ -303,6 +308,7 @@ namespace EconomicsDemography
                                 if (Rand.Value < femaleChance && factionFemales[fid] > 0) factionFemales[fid]--;
                             }
                             factionPopulation[fid]--;
+                            if (factionFemales[fid] > factionPopulation[fid]) factionFemales[fid] = factionPopulation[fid];
                             handled = true;
                         }
                     }
@@ -334,6 +340,7 @@ namespace EconomicsDemography
                                 if (Rand.Value < femaleChance && factionFemales[fid] > 0) factionFemales[fid]--;
                             }
                             factionPopulation[fid]--;
+                            if (factionFemales[fid] > factionPopulation[fid]) factionFemales[fid] = factionPopulation[fid];
                             handled = true;
                         }
 
@@ -363,6 +370,7 @@ namespace EconomicsDemography
                                 if (Rand.Value < femaleChance && factionFemales[fid] > 0) factionFemales[fid]--;
                             }
                             factionPopulation[fid]--;
+                            if (factionFemales[fid] > factionPopulation[fid]) factionFemales[fid] = factionPopulation[fid];
                         }
                         else if (roll < adults + eldersCount) // Смерть старика
                         {
@@ -413,6 +421,7 @@ namespace EconomicsDemography
                         {
                             float realR = GetFactionRealFemaleRatio(f);
                             chance = realR >= 0f ? realR : ((float)factionFemales[fid] / Mathf.Max(1f, (float)(factionPopulation[fid] - 1)));
+                            chance = Mathf.Clamp01(chance);
                         }
                         if (Rand.Value < chance) factionFemales[fid]++;
                     }
@@ -484,6 +493,11 @@ namespace EconomicsDemography
             f.defeated = true;
             f.hidden = true; 
             factionPopulation[f.loadID] = 0;
+            factionFemales[f.loadID] = 0;
+            factionChildren[f.loadID] = 0f;
+            factionElders[f.loadID] = 0f;
+            maturationBuffer[f.loadID] = 0f;
+            agingBuffer[f.loadID] = 0f;
             if (EconomicsDemographyMod.Settings.enableNotifications)
             {
                 Find.LetterStack.ReceiveLetter("ED_FactionDefeatTitle".Translate(f.Name), "ED_FactionDefeatText".Translate(f.Name), LetterDefOf.NeutralEvent, null, f);

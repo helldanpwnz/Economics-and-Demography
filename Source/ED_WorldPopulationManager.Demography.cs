@@ -632,7 +632,7 @@ namespace EconomicsDemography
                                     if (EconomicsDemographyMod.Settings.enableNotifications)
                                     {
                                         Find.LetterStack.ReceiveLetter("ED_ExpansionLetterTitle".Translate(f.Name), 
-                                            "ED_ExpansionLetterText".Translate(totalLiving, totalCapacity, f.Name, newSett.Name, expansionCost), 
+                                            "ED_ExpansionLetterText".Translate(totalLiving, totalCapacity, f.Name, newSett.Name, Mathf.RoundToInt(expansionCost)), 
                                             LetterDefOf.PositiveEvent, new GlobalTargetInfo(newTile));
                                     }
 

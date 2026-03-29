@@ -45,7 +45,7 @@
 
   <!-- Demography & Events -->
   <ED_ExpansionLetterTitle>Expansion: {0}</ED_ExpansionLetterTitle>
-  <ED_ExpansionLetterText>Due to an excess of resources and people ({0}/{1}), the faction {2} has founded a new settlement: {3}.\n\nResources spent: {4:F0}</ED_ExpansionLetterText>
+  <ED_ExpansionLetterText>Due to an excess of resources and people ({0}/{1}), the faction {2} has founded a new settlement: {3}.\n\nResources spent: {4}</ED_ExpansionLetterText>
   <ED_DefectionLog>[E&amp;D] A citizen left {0} due to low standard of living ({1:F1} sil/pop) and joined {2}</ED_DefectionLog>
   <ED_KidnapLog>[E&amp;D] {0} {1} {2} people from {3}</ED_KidnapLog>
   <ED_Kidnapped>kidnapped</ED_Kidnapped>

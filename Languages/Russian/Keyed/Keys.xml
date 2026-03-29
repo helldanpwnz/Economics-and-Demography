@@ -45,7 +45,7 @@
 
   <!-- Demography & Events -->
   <ED_ExpansionLetterTitle>Экспансия: {0}</ED_ExpansionLetterTitle>
-  <ED_ExpansionLetterText>Благодаря избытку ресурсов и людей ({0}/{1}), фракция {2} основала новое поселение: {3}.\n\nПотрачено ресурсов: {4:F0}</ED_ExpansionLetterText>
+  <ED_ExpansionLetterText>Благодаря избытку ресурсов и людей ({0}/{1}), фракция {2} основала новое поселение: {3}.\n\nПотрачено ресурсов: {4}</ED_ExpansionLetterText>
   <ED_DefectionLog>[E&amp;D] Житель покинул {0} из-за низкого уровня жизни ({1:F1} сер/чел) и примкнул к {2}</ED_DefectionLog>
   <ED_KidnapLog>[E&amp;D] {0} {1} {2} чел. у {3}</ED_KidnapLog>
   <ED_Kidnapped>похитили</ED_Kidnapped>
