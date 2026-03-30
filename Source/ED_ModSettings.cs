@@ -325,6 +325,12 @@ namespace EconomicsDemography
             Settings = GetSettings<EconomicsDemographySettings>();
         }
 
+        public override void WriteSettings()
+        {
+            base.WriteSettings();
+            Patch_MarketValue_Dynamic.isDirty = true;
+        }
+
         public override void DoSettingsWindowContents(Rect inRect)
         {
             Settings.DoSettingsWindowContents(inRect);

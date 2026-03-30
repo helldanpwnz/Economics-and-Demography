@@ -15,33 +15,48 @@ namespace EconomicsDemography
     [HarmonyPatch(typeof(StatWorker_MarketValue), "GetValueUnfinalized")]
     public static class Patch_MarketValue_Dynamic
     {
+        private static Dictionary<ThingDef, float> multiplierCache = new Dictionary<ThingDef, float>();
+        public static bool isDirty = true;
+
         [HarmonyPostfix]
         static void Postfix(StatRequest req, ref float __result)
         {
-            if (Patch_MapGen_Tracker.IsGeneratingMap) return;
+            // Самые дешевые проверки - первыми. WealthCalculationDepth - ThreadStatic, очень быстрый доступ.
+            if (WorldPopulationManager.WealthCalculationDepth > 0 || Patch_MapGen_Tracker.IsGeneratingMap) return;
 
-            // Если сейчас считается богатство (для Рассказчика или статистики) - инфляцию ИГНОРИРУЕМ
-            if (WorldPopulationManager.IsCalculatingWealth) return;
+            ThingDef def = req.Def as ThingDef;
+            if (def == null || def == ThingDefOf.Silver || def.category == ThingCategory.Pawn) return;
 
-            if (req.Def is ThingDef def) 
+            if (isDirty)
             {
-                if (def == ThingDefOf.Silver || def.category == ThingCategory.Pawn) return;
-
-                var manager = WorldPopulationManager.Instance;
-                if (manager != null)
-                {
-                    if (manager.globalPriceModifiers != null && manager.globalPriceModifiers.TryGetValue(def, out float mult))
-                    {
-                        __result *= mult;
-                    }
-                    
-                    // Инфляция (если это не серебро)
-                    if (def != ThingDefOf.Silver && EconomicsDemographyMod.Settings.enableGlobalInflation)
-                    {
-                        __result *= manager.currentInflation;
-                    }
-                }
+                multiplierCache.Clear();
+                isDirty = false;
             }
+
+            if (multiplierCache.TryGetValue(def, out float cachedMult))
+            {
+                if (cachedMult != 1f) __result *= cachedMult;
+                return;
+            }
+
+            var manager = WorldPopulationManager.Instance;
+            if (manager == null) return;
+
+            float mult = 1f;
+            if (manager.globalPriceModifiers != null && manager.globalPriceModifiers.TryGetValue(def, out float globalMult))
+            {
+                mult *= globalMult;
+            }
+            
+            if (EconomicsDemographyMod.Settings != null && EconomicsDemographyMod.Settings.enableGlobalInflation)
+            {
+                float inflation = manager.currentInflation;
+                if (Math.Abs(inflation - 1.0f) > 0.0001f)
+                    mult *= inflation;
+            }
+
+            multiplierCache[def] = mult;
+            if (mult != 1f) __result *= mult;
         }
     }
 }

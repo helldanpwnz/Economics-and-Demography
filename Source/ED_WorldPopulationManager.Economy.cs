@@ -152,6 +152,8 @@ public override void WorldComponentTick()
                     }
                 }
             }
+
+            Patch_MarketValue_Dynamic.isDirty = true;
         }
 
         private void RunMonthlyCleanup()
