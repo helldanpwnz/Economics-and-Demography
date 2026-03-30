@@ -139,10 +139,30 @@ namespace EconomicsDemography
             if (factionStockpiles == null) factionStockpiles = new Dictionary<int, VirtualStockpile>();
         }
 
-        // === ИНИЦИАЛИЗАЦИЯ И СТАРТОВАЯ ГЕНЕРАЦИЯ ===
+        public bool IsInitialized(Faction f)
+        {
+            if (f == null || f.loadID < 0) return false;
+            return initialized != null && initialized.Contains(f.loadID);
+        }
+
+        public bool IsSimulatedFaction(Faction f)
+        {
+            if (f == null || f.loadID < 0 || f.IsPlayer || f.def == null || f.defeated) return false;
+            // Игнорируем скрытые и неписи-монстры (не-люди)
+            if (f.def.hidden || (f.hidden == true) || !f.def.humanlikeFaction) return false;
+            // Игнорируем временные и квестовые фракции
+            if (f.temporary) return false;
+            
+            string dn = f.def.defName;
+            if (dn.Contains("Ancient") || dn.Contains("Refugee") || dn.Contains("Beggar") || 
+                dn.Contains("Worksite") || dn.Contains("Quest")) return false;
+                
+            return true;
+        }
+
         public int GetPopulation(Faction f)
         {
-            if (f == null || f.IsPlayer || f.def.hidden || !f.def.humanlikeFaction) return -1;
+            if (!IsSimulatedFaction(f)) return 0;
             int fid = f.loadID;
 
             // 1. ПЕРВИЧНАЯ ИНИЦИАЛИЗАЦИЯ (Для новых фракций)
@@ -187,7 +207,7 @@ namespace EconomicsDemography
                 GetStockpile(f); 
                 
                 float targetFR = GetFactionRealFemaleRatio(f);
-                float femaleRatio = targetFR >= 0f ? targetFR : Rand.Range(0.45f, 0.55f); 
+                float femaleRatio = targetFR >= 0f ? targetFR : Rand.Range(0.40f, 0.60f); 
 
                 factionFemales[fid] = Mathf.RoundToInt(baseAdults * femaleRatio);
                 
@@ -262,7 +282,7 @@ namespace EconomicsDemography
 
         public void ModifyPopulation(Faction f, int amount, Gender? gender = null, Pawn contextPawn = null, PopulationPool pool = PopulationPool.Random)
         {
-            if (f == null || f.IsPlayer || f.loadID < 0 || f.def.hidden || !f.def.humanlikeFaction) return;
+            if (!IsSimulatedFaction(f)) return;
             int fid = f.loadID;
 
             if (!factionPopulation.ContainsKey(fid)) factionPopulation[fid] = 0;
@@ -432,7 +452,7 @@ namespace EconomicsDemography
 
             if (totalLiving <= 0)
             {
-                if (f.def.hidden || !f.def.humanlikeFaction || f.IsPlayer || (f.leader == null && f.def.techLevel > TechLevel.Animal)) 
+                if (!IsSimulatedFaction(f)) 
                 {
                     return; 
                 }
@@ -678,33 +698,37 @@ namespace EconomicsDemography
 
         public float GetFactionRealFemaleRatio(Faction f)
         {
-            float targetFemaleRatio = -1f;
+            if (f?.def == null) return -1f;
             try
             {
                 PawnKindDef kind = f.def.basicMemberKind;
                 if (kind == null && f.def.pawnGroupMakers != null)
                 {
-                    var options = f.def.pawnGroupMakers.SelectMany(gm => gm.options ?? new List<PawnGenOption>())
-                        .OrderByDescending(o => o.selectionWeight).ToList();
-                    
-                    var specificOpt = options.FirstOrDefault(o => o.kind?.fixedGender.HasValue == true || o.kind?.race?.GetType().Name.Contains("AlienRace") == true);
-                    if (specificOpt != null) kind = specificOpt.kind;
-                    else kind = options.FirstOrDefault()?.kind;
+                    var options = f.def.pawnGroupMakers.SelectMany(gm => gm.options ?? new List<PawnGenOption>()).ToList();
+                    var specKind = options.FirstOrDefault(o => o.kind?.fixedGender.HasValue == true || o.kind?.race?.defName != "Human")?.kind;
+                    kind = specKind ?? options.FirstOrDefault()?.kind;
                 }
 
                 if (kind != null)
                 {
-                    if (kind.fixedGender.HasValue) 
-                        targetFemaleRatio = kind.fixedGender.Value == Gender.Female ? 1f : 0f;
+                    float baseRatio = 0.5f;
+                    // 1. Проверяем фиксированный пол в Kind
+                    if (kind.fixedGender.HasValue) baseRatio = kind.fixedGender.Value == Gender.Female ? 1f : 0f;
+                    // 2. Проверяем Alien Races настройки
                     else if (kind.race?.GetType().Name.Contains("AlienRace") == true)
                     {
                         float maleProb = Traverse.Create(kind.race).Field("alienRace").Field("generalSettings").Field("maleGenderProbability").GetValue<float>();
-                        targetFemaleRatio = Mathf.Clamp01(1f - maleProb);
+                        baseRatio = Mathf.Clamp01(1f - maleProb);
                     }
+
+                    // Если раса ОДНОПОЛАЯ (0 или 1) - возвращаем как есть, чтобы не было краша
+                    if (baseRatio > 0.99f || baseRatio < 0.01f) return baseRatio;
                 }
             }
             catch { }
-            return targetFemaleRatio;
+            
+            // Для всех остальных (где есть 2 пола) возвращаем -1, чтобы сработал твой разброс 40-60%
+            return -1f; 
         }
     }
 }

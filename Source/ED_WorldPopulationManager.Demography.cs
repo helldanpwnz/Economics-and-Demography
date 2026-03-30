@@ -21,8 +21,7 @@ namespace EconomicsDemography
             // --- ШАГ 1: ПЕРЕТОК (Хищничество и Миграция) ---
             foreach (var aggressor in factions) 
             {
-                if (aggressor == null || aggressor.loadID <= 0 || aggressor.def.hidden || aggressor.defeated || (aggressor.leader == null && aggressor.def.techLevel > TechLevel.Animal)) continue;
-                if (aggressor.IsPlayer || aggressor.def.hidden || aggressor.defeated) continue;
+                if (!IsSimulatedFaction(aggressor) || aggressor.defeated) continue;
                 
                 int aggId = aggressor.loadID;
                 
@@ -113,17 +112,10 @@ namespace EconomicsDemography
             // --- ШАГ 2: БИОЛОГИЧЕСКИЙ ЦИКЛ ---
             foreach (var f in factions)
             {
-                if (f == null || f.loadID < 0 || f.IsPlayer || f.def.hidden || f.defeated || !f.def.humanlikeFaction || (f.leader == null && f.def.techLevel > TechLevel.Animal)) continue;
+                if (!IsSimulatedFaction(f)) continue;
 
                 EnsureFactionDataExists(f);
                 
-                if (f == null || f.loadID < 0) continue; 
-                
-                if (f.IsPlayer || f.def.hidden || f.defeated || !f.def.humanlikeFaction) continue;
-
-                string defName = f.def.defName;
-                if (defName.Contains("Ancient") || defName.Contains("Refugee") || defName.Contains("Beggar")) continue;
-
                 int fid = f.loadID;
 
                 int adults = GetPopulation(f); 

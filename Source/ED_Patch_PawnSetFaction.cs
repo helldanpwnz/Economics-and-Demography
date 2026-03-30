@@ -26,20 +26,24 @@ namespace EconomicsDemography
             var manager = Find.World?.GetComponent<WorldPopulationManager>();
             if (manager == null) return;
 
-            // 1. Убыль в старой фракции (если она не игрок и не скрытая)
-            if (oldFaction != null && !oldFaction.IsPlayer && !oldFaction.def.hidden)
+            // 1. Убыль в старой фракции
+            if (manager.IsSimulatedFaction(oldFaction))
             {
-                // Уменьшаем популяцию, так как пешка покинула ряды фракции (вербовка, переход)
-                manager.ModifyPopulation(oldFaction, -1, __instance.gender, __instance);
-                Log.Message(string.Format((string)"ED_Log_PawnLeftFaction".Translate(), __instance.NameShortColored, oldFaction.Name));
+                if (manager.IsInitialized(oldFaction))
+                {
+                    manager.ModifyPopulation(oldFaction, -1, __instance.gender, __instance);
+                    Log.Message(string.Format((string)"ED_Log_PawnLeftFaction".Translate(), __instance.NameShortColored, oldFaction.Name));
+                }
             }
-
-            // 2. Прирост в новой фракции (если она не игрок и не скрытая)
-            if (newFaction != null && !newFaction.IsPlayer && !newFaction.def.hidden)
+            
+            // 2. Прирост в новой фракции
+            if (manager.IsSimulatedFaction(newFaction))
             {
-                // Увеличиваем популяцию, так как пешка вступила во фракцию (например, деффект или переход между ИИ фракциями)
-                manager.ModifyPopulation(newFaction, 1, __instance.gender, __instance);
-                Log.Message(string.Format((string)"ED_Log_PawnJoinedFaction".Translate(), __instance.NameShortColored, newFaction.Name));
+                if (manager.IsInitialized(newFaction))
+                {
+                    manager.ModifyPopulation(newFaction, 1, __instance.gender, __instance);
+                    Log.Message(string.Format((string)"ED_Log_PawnJoinedFaction".Translate(), __instance.NameShortColored, newFaction.Name));
+                }
             }
         }
     }

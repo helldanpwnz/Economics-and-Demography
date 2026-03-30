@@ -60,7 +60,7 @@ public override void WorldComponentTick()
             var factions = Find.FactionManager.AllFactionsListForReading;
 
             // === 0. ДИНАМИЧЕСКИЙ ЛИМИТ (НОВЫЕ ФРАКЦИИ) ===
-            var humanlikeFactions = factions.Where(f => f != null && !f.IsPlayer && !f.def.hidden && f.def.humanlikeFaction).ToList();
+            var humanlikeFactions = factions.Where(f => IsSimulatedFaction(f)).ToList();
             foreach (var f in humanlikeFactions)
             {
                 if (knownFactionIDs == null) knownFactionIDs = new List<int>();
@@ -110,7 +110,7 @@ public override void WorldComponentTick()
             
             foreach (var f in Find.FactionManager.AllFactionsListForReading)
             {
-                if (f.def.hidden || f.IsPlayer || (f.leader == null && f.def.techLevel > TechLevel.Animal)) continue;
+                if (!IsSimulatedFaction(f)) continue;
 
                 int fid = f.loadID;
                 float current = factionLimitModifiers.TryGetValue(fid, out float m) ? m : 1f;
@@ -199,17 +199,17 @@ public override void WorldComponentTick()
         {
             foreach (Faction f in Find.FactionManager.AllFactions)
             {
-                if (f != null && !f.IsPlayer && !f.def.hidden && !f.defeated && f.def.humanlikeFaction && (f.leader != null || f.def.techLevel <= TechLevel.Animal))
+                if (IsSimulatedFaction(f))
                 {
                     GetStockpile(f); 
                 }
             }
 
             int totalWorldPop = Find.FactionManager.AllFactions
-                .Where(f => !f.def.hidden && f.def.humanlikeFaction)
+                .Where(f => IsSimulatedFaction(f))
                 .Sum(f => this.GetTotalLiving(f));
 
-            int activeFactionCountInt = Find.FactionManager.AllFactions.Count(fac => fac != null && !fac.def.hidden);
+            int activeFactionCountInt = Find.FactionManager.AllFactions.Count(fac => IsSimulatedFaction(fac));
             if (activeFactionCountInt <= 0) activeFactionCountInt = 5; 
             float activeFactionCount = (float)activeFactionCountInt;
 
@@ -363,7 +363,7 @@ public override void WorldComponentTick()
             foreach (var kvp in factionStockpiles)
             {
                 Faction f = Find.FactionManager.AllFactionsListForReading.FirstOrDefault(x => x.loadID == kvp.Key);
-                if (f == null || f.defeated || f.def.hidden) continue;
+                if (!IsSimulatedFaction(f)) continue;
                 total += kvp.Value.silver;
             }
 

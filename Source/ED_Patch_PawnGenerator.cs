@@ -19,19 +19,20 @@ namespace EconomicsDemography
         [HarmonyPrefix]
         static bool Prefix(ref PawnGenerationRequest request)
         {
-            if (request.Faction == null || !request.Faction.def.humanlikeFaction) return true;
-            
-            if (request.Faction.IsPlayer) return true;
-
-            if (request.FixedGender.HasValue) return true;
-
             if (Find.World == null) return true;
             var manager = Find.World.GetComponent<WorldPopulationManager>();
-            if (manager == null) return true;
+            if (manager == null || !manager.IsSimulatedFaction(request.Faction)) return true;
+
+            if (request.FixedGender.HasValue) return true;
 
             try
             {
                 int fid = request.Faction.loadID;
+                if (fid < 0) return true; // Фракция еще не зарегистрирована в мире (например, создается лидером More Factions)
+
+                // Проверяем, готова ли система демографии для этой фракции
+                if (!manager.IsInitialized(request.Faction)) return true;
+
                 if (!manager.factionPopulation.ContainsKey(fid)) return true;
 
                 // Защита от конфликтов с бесполыми расами, HAR и монополыми расами
@@ -41,7 +42,8 @@ namespace EconomicsDemography
                     
                     if (request.KindDef.race != null)
                     {
-                        if (request.KindDef.race.race != null && !request.KindDef.race.race.hasGenders) return true;
+                        // Если расы нет или она не имеет пола — выходим
+                        if (request.KindDef.race.race == null || !request.KindDef.race.race.hasGenders) return true;
                         
                         // Если это инопланетная раса (HAR), мы не должны вмешиваться в пол,
                         // потому что у них свои настройки вероятности (maleGenderProbability) и текстур!
