@@ -17,7 +17,11 @@ namespace EconomicsDemography
         private void ProcessDailyGrowth()
         {
             List<Faction> factions = Find.FactionManager.AllFactionsListForReading;
+            Faction luckySettled = factions.Where(f => IsSimulatedFaction(f) && (Find.WorldObjects.Settlements.Count(s => s.Faction == f) + (orbitalBases.TryGetValue(f.loadID, out int sb) ? sb : 0)) > 0).RandomElementWithFallback();
+            Faction luckyNomad = factions.Where(f => IsSimulatedFaction(f) && (Find.WorldObjects.Settlements.Count(s => s.Faction == f) + (orbitalBases.TryGetValue(f.loadID, out int sb) ? sb : 0)) == 0).RandomElementWithFallback();
             
+            if (luckySettled != null && EconomicsDemographyMod.Settings.enableNotifications) Log.Message("[ED] Daily Lucky Settled: " + luckySettled.Name);
+            if (luckyNomad != null && EconomicsDemographyMod.Settings.enableNotifications) Log.Message("[ED] Daily Lucky Nomad: " + luckyNomad.Name);
             // --- ШАГ 1: ПЕРЕТОК (Хищничество и Миграция) ---
             foreach (var aggressor in factions) 
             {
@@ -271,7 +275,7 @@ namespace EconomicsDemography
                 float dailyBirths = (pairs * ratePerPair * birthMultiplier * hostileBirthPenalty * childDensityFactor * starvationFactor * techBirthMult) / 60f;
 
                 // ЛОГИКА ДЕГРАДАЦИИ И УХОДА В БРОДЯГИ
-                if (totalBases > 0 && Find.TickManager.TicksGame > 1800000)
+                if (totalBases > 0 && Find.TickManager.TicksGame > 30000) // 5 дней
                 {
                     bool shouldCollapse = false;
                     int workingPop = adults + Mathf.CeilToInt(currentElders); // Дети не поддерживают базу
@@ -288,7 +292,7 @@ namespace EconomicsDemography
                         shouldCollapse = true;
                     }
 
-                    if (shouldCollapse && Rand.Value < 0.05f)
+                    if (f == luckySettled && shouldCollapse && Rand.Value < 0.2f)
                     {
                         Settlement settlementToCollapse = Find.WorldObjects.Settlements
                             .Where(s => s.Faction == f)
@@ -328,6 +332,7 @@ namespace EconomicsDemography
 
                             groundBases--;
                             totalBases--;
+                            Log.Message("[ED] Event: " + f.Name + " collapsed settlement " + settName);
                         }
                     }
                 }
@@ -478,30 +483,42 @@ namespace EconomicsDemography
                 // А) Бродяги -> Возрождение
                 if (totalBases == 0)
                 {
-                    int requiredToSettle = Mathf.RoundToInt(capacityPerBase * 0.8f);
+                    int requiredToSettle = Mathf.RoundToInt(capacityPerBase * 0.10f);
 
-                    if (adults >= requiredToSettle)
+                    if (f == luckyNomad)
                     {
-                        if (Rand.Value < 0.02f) 
+                        if (adults >= requiredToSettle)
                         {
-                            int newTile = TileFinder.RandomSettlementTileFor(f);
-                            if (newTile != -1)
+                            if (Rand.Value < 0.10f) 
                             {
-                                Settlement newSett = (Settlement)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.Settlement);
-                                newSett.SetFaction(f); 
-                                newSett.Tile = newTile;
-                                newSett.Name = SettlementNameGenerator.GenerateSettlementName(newSett, null);
-                                Find.WorldObjects.Add(newSett);
-
-                                if (vagrantWarningsSent.Contains(fid)) vagrantWarningsSent.Remove(fid);
-                                
-                                if (EconomicsDemographyMod.Settings.enableNotifications)
+                                int newTile = TileFinder.RandomSettlementTileFor(f);
+                                if (newTile != -1)
                                 {
-                                    Find.LetterStack.ReceiveLetter("ED_RebirthTitle".Translate(f.Name), 
-                                        "ED_RebirthText".Translate(f.Name, adults, newSett.Name), 
-                                        LetterDefOf.PositiveEvent, new GlobalTargetInfo(newTile));
+                                    Settlement newSett = (Settlement)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.Settlement);
+                                    newSett.SetFaction(f); 
+                                    newSett.Tile = newTile;
+                                    newSett.Name = SettlementNameGenerator.GenerateSettlementName(newSett, null);
+                                    Find.WorldObjects.Add(newSett);
+
+                                    if (vagrantWarningsSent.Contains(fid)) vagrantWarningsSent.Remove(fid);
+                                    
+                                    if (EconomicsDemographyMod.Settings.enableNotifications)
+                                    {
+                                        Find.LetterStack.ReceiveLetter("ED_RebirthTitle".Translate(f.Name), 
+                                            "ED_RebirthText".Translate(f.Name, adults, newSett.Name), 
+                                            LetterDefOf.PositiveEvent, new GlobalTargetInfo(newTile));
+                                    }
+                                    Log.Message("[ED] Event: " + f.Name + " achieved Rebirth at tile " + newTile);
                                 }
                             }
+                            else
+                            {
+                                Log.Message("[ED] Nomad Rebirth Check: " + f.Name + " failed 10% chance roll.");
+                            }
+                        }
+                        else 
+                        {
+                            Log.Message("[ED] Nomad Rebirth Check: " + f.Name + " has insufficient population (" + adults + " / " + requiredToSettle + ").");
                         }
                     }
                 }
@@ -513,36 +530,25 @@ namespace EconomicsDemography
                     for (int i = 0; i < lostCount; i++)
                     {
                         int currentLiving = GetTotalLiving(f);
-                        int popLoss = Mathf.RoundToInt(currentLiving * Rand.Range(0.15f, 0.25f));
+                        int popLoss = Mathf.RoundToInt(currentLiving * Rand.Range(0.10f, 0.20f));
                         popLoss = Mathf.Max(5, popLoss);
                         
                         if ((lastBaseCount[fid] - i) > 1)
                         {
                             ModifyPopulation(f, -popLoss);
-                            if (EconomicsDemographyMod.Settings.enableNotifications)
-                            {
-                                Find.LetterStack.ReceiveLetter("ED_TerritoryLossTitle".Translate(f.Name), 
-                                    "ED_TerritoryLossText".Translate(f.Name, popLoss), 
-                                    LetterDefOf.NegativeEvent);
-                            }
+                            // Уведомление убрано, так как оно дублирует сообщения от других модов при разрушении поселений
                         }
                         else
                         {
-                            int lastStandLoss = Mathf.RoundToInt(totalLiving * 0.4f);
+                            int lastStandLoss = Mathf.RoundToInt(totalLiving * 0.3f);
                             ModifyPopulation(f, -lastStandLoss);
-                            if (EconomicsDemographyMod.Settings.enableNotifications)
-                            {
-                                Find.LetterStack.ReceiveLetter("ED_LastBaseLossTitle".Translate(f.Name), 
-                                    "ED_LastBaseLossText".Translate(f.Name, totalLiving - lastStandLoss), 
-                                    LetterDefOf.NeutralEvent);
-                            }
                         }
                     }
                 }
                 lastBaseCount[fid] = groundBases;
 
                 // Г) Экспансия (Расселение при перенаселении)
-                if (EconomicsDemographyMod.Settings.enableExpansion && Find.TickManager.TicksGame >= 90000) // 15 дней
+                if (EconomicsDemographyMod.Settings.enableExpansion && Find.TickManager.TicksGame >= 30000) // 5 дней
                 {
                     if (totalBases > 0 && f.def.defName != "TradersGuild" && f.def.defName != "Salvagers")
                     {
@@ -573,10 +579,8 @@ namespace EconomicsDemography
                         // ЭКСПАНСИЯ (Требует 20x содержания)
                         if (totalLiving >= finalPopRequired && currentWealth >= expansionCost && currentWealth >= (totalDailyCost * 20f))
                         {
-                            float overcrowding = (float)totalLiving / totalCapacity;
-                            float expansionChance = Mathf.Clamp(0.10f * overcrowding, 0.10f, 0.40f);
-
-                            if (Rand.Value < expansionChance) 
+                            float expansionChance = 0.30f;
+                            if (f == luckySettled && Rand.Value < expansionChance) 
                             {
                                 int newTile = -1;
                                 var currentBases = Find.WorldObjects.Settlements.Where(s => s.Faction == f).ToList();
@@ -627,6 +631,7 @@ namespace EconomicsDemography
                                             "ED_ExpansionLetterText".Translate(totalLiving, totalCapacity, f.Name, newSett.Name, Mathf.RoundToInt(expansionCost)), 
                                             LetterDefOf.PositiveEvent, new GlobalTargetInfo(newTile));
                                     }
+                                    Log.Message("[ED] Event: " + f.Name + " expanded to tile " + newTile);
 
                                     totalBases++;
                                     totalCapacity = totalBases * capacityPerBase;
