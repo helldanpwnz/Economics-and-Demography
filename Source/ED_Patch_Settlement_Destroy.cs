@@ -20,15 +20,15 @@ namespace EconomicsDemography
             // Проверяем, что это поселение, и оно не принадлежит игроку
             if (!(__instance is Settlement settlement) || settlement == null || settlement.Faction == null || settlement.Faction.IsPlayer) return;
 
-            // Если богатство уже было изъято при генерации карты (нападение) — ничего не делаем
-            if (Patch_SpawnFactionLoot.processedSettlements.Contains(settlement.ID))
-            {
-                Patch_SpawnFactionLoot.processedSettlements.Remove(settlement.ID);
-                return;
-            }
-
             var manager = Find.World?.GetComponent<WorldPopulationManager>();
             if (manager == null) return;
+
+            // Если богатство уже было изъято при генерации карты (нападение) — ничего не делаем
+            if (manager.processedSettlements.Contains(settlement.ID))
+            {
+                manager.processedSettlements.Remove(settlement.ID);
+                return;
+            }
 
             VirtualStockpile stock = manager.GetStockpile(settlement.Faction);
             if (stock == null) return;

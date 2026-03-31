@@ -26,7 +26,10 @@ public override void WorldComponentTick()
         manufacturedCache.Clear();
         foodCache.Clear();
         
-        RunDailyTasks(); 
+        // Вместо полного дневного цикла (RunDailyTasks), который случайно менял капитал при каждой загрузке сейва,
+        // мы только разово обновляем кэши цен и активов игрока, чтобы интерфейс загрузился корректно.
+        RecalculateGlobalPrices();
+        UpdatePlayerAssetsCache();
         
         initializedSession = true;
         Log.Message("ED_Log_EconomyInit".Translate());
@@ -54,6 +57,7 @@ public override void WorldComponentTick()
             ProcessDailyGrowth();
             RecalculateGlobalPrices();
             UpdatePlayerAssetsCache();
+            ProcessDebtRepayment();
             
             // === РАСЧЕТ ИНФЛЯЦИИ (Серебро к серебру) ===
             float totalSilverNow = CalculateTotalWorldSilver();
@@ -154,6 +158,53 @@ public override void WorldComponentTick()
             }
 
             Patch_MarketValue_Dynamic.isDirty = true;
+        }
+
+        private void ProcessDebtRepayment()
+        {
+            if (factionRaidDebt == null) factionRaidDebt = new Dictionary<int, float>();
+
+            var fidsWithDebt = factionRaidDebt.Keys.ToList();
+            foreach (int fid in fidsWithDebt)
+            {
+                float debt = factionRaidDebt[fid];
+                if (debt <= 0)
+                {
+                    factionRaidDebt.Remove(fid);
+                    continue;
+                }
+
+                Faction f = Find.FactionManager.AllFactionsListForReading.FirstOrDefault(x => x.loadID == fid);
+                if (f == null || f.defeated)
+                {
+                    factionRaidDebt.Remove(fid);
+                    continue;
+                }
+
+                VirtualStockpile stock = GetStockpile(f);
+                if (stock == null) continue;
+
+                float currentWealth = stock.GetTotalWealth();
+                float safeMargin = GetMaintenanceCost(f); // Неприкосновенный запас = 1 суточное содержание фракции
+                
+                if (currentWealth > safeMargin)
+                {
+                    float repaymentAmount = currentWealth - safeMargin;
+                    // Максимум 20% от текущего долга за сутки или фиксированный минимум гарантированный от излишков
+                    float paymentLimit = Mathf.Max(debt * 0.2f, 1000f);
+                    repaymentAmount = Mathf.Min(repaymentAmount, paymentLimit);
+                    repaymentAmount = Mathf.Min(repaymentAmount, debt); // Не платим больше, чем должны
+
+                    if (repaymentAmount > 0)
+                    {
+                        if (stock.TryConsumeWealth(repaymentAmount, globalPriceModifiers))
+                        {
+                            factionRaidDebt[fid] -= repaymentAmount;
+                            if (factionRaidDebt[fid] <= 0f) factionRaidDebt.Remove(fid);
+                        }
+                    }
+                }
+            }
         }
 
         private void RunMonthlyCleanup()

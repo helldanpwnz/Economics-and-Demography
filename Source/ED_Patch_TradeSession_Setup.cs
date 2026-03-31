@@ -121,12 +121,25 @@ namespace EconomicsDemography
 
                     List<Thing> newThings = virtStock.GenerateRealThings(newTrader.TraderKind, false);
                     int carrierIndex = 0;
+                    
+                    var packAnimalsOnly = carriers.Where(x => x.RaceProps.packAnimal).ToList();
+                    Pawn silverCarrier = (packAnimalsOnly.Count > 0) ? packAnimalsOnly[0] : traderPawn;
+
                     foreach (Thing t in newThings)
                     {
                         if (t == null || t.stackCount <= 0) continue; 
+                        
                         try {
-                            carriers[carrierIndex].inventory.innerContainer.TryAdd(t);
-                            carrierIndex = (carrierIndex + 1) % carriers.Count;
+                            if (t.def == ThingDefOf.Silver)
+                            {
+                                silverCarrier.inventory.innerContainer.TryAdd(t);
+                            }
+                            else
+                            {
+                                Pawn target = (packAnimalsOnly.Count > 0) ? packAnimalsOnly[carrierIndex % packAnimalsOnly.Count] : traderPawn;
+                                target.inventory.innerContainer.TryAdd(t);
+                                carrierIndex++;
+                            }
                         } catch { }
                     }
                     

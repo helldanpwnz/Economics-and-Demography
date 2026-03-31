@@ -102,6 +102,10 @@
   <ED_UI_Capital>Капитал: {0}</ED_UI_Capital>
   <ED_UI_Silver>(Серебро: {0})</ED_UI_Silver>
   <ED_UI_MainStocks>Основные запасы:</ED_UI_MainStocks>
+  <ED_UI_RaidDebt>Долг: {0}$</ED_UI_RaidDebt>
+  <ED_Log_RaidBankruptApplied>[E&amp;D] Фракция {0} обанкротилась, отправив рейд. Склад обнулён.</ED_Log_RaidBankruptApplied>
+  <ED_Log_RaidCostApplied>[E&amp;D] Фракция {0} оплатила рейд: -{1}$</ED_Log_RaidCostApplied>
+  <ED_Log_RaidBlockedBankruptcy>[E&amp;D] Рейд {0} заблокирован: капитал {1}$ &lt; необходимый {2}$</ED_Log_RaidBlockedBankruptcy>
 
   <ED_Trait_Miner>Шахтеры</ED_Trait_Miner>
   <ED_Trait_Farmer>Фермеры</ED_Trait_Farmer>

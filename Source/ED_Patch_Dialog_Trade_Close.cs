@@ -89,11 +89,19 @@ namespace EconomicsDemography
                         int oldMax = stock.maxSlots;
                         stock.maxSlots = 9999;
                         
-                        stock.AddItem(t.GetInnerIfMinified().def, t.stackCount);
+                        Thing inner = t.GetInnerIfMinified();
+                        int q = -1;
+                        var qComp = inner.TryGetComp<CompQuality>();
+                        if (qComp != null)
+                        {
+                            q = (int)qComp.Quality; 
+                        }
+                        
+                        stock.AddItem(inner.def, t.stackCount, q);
                         
                         stock.maxSlots = oldMax;
                         itemsRecovered++;
-                        Log.Message("ED_Log_ItemRecovered".Translate(t.def.defName, t.stackCount));
+                        Log.Message("ED_Log_ItemRecovered".Translate(inner.def.defName, t.stackCount));
                     }
                 }
                 

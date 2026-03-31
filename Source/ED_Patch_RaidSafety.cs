@@ -33,7 +33,11 @@ namespace EconomicsDemography
                     deployedPawns += map.mapPawns.SpawnedPawnsInFaction(parms.faction).Count;
             
             int availablePop = (adults + elders) - deployedPawns;
-            if (availablePop < 5) return false; 
+            if (availablePop < 5) 
+            {
+                //Log.Message($"[E&D] Raid blocked for {parms.faction.Name}: only {availablePop} people available.");
+                return false; 
+            }
             
             float costPerPawn = 60f; 
             if (parms.faction.def.techLevel <= TechLevel.Neolithic) costPerPawn = 45f;
@@ -41,6 +45,13 @@ namespace EconomicsDemography
             else if (parms.faction.def.techLevel >= TechLevel.Spacer) costPerPawn = 110f;
             
             float calculatedPoints = availablePop * costPerPawn;
+
+            // БЛОКИРОВКА ПО ДОЛГУ: фракция не может напасть, пока не погасит долг за прошлый рейд.
+            if (manager != null && manager.factionRaidDebt.TryGetValue(parms.faction.loadID, out float debt) && debt > 0f)
+            {
+                return false;
+            }
+
             if (parms.points > calculatedPoints) parms.points = Mathf.Max(100f, calculatedPoints);
             
             return true;

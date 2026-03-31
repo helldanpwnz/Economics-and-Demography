@@ -34,32 +34,67 @@ namespace EconomicsDemography
 
             int traderID = trader.thingIDNumber;
             
-            if (Patch_TradeSession_Setup.processedCaravans.Contains(traderID)) return;
+            // Принудительно "забываем" торговца при заходе на карту, чтобы разрешить новую генерацию товаров из склада
+            Patch_TradeSession_Setup.processedCaravans.Remove(traderID);
 
-            List<Pawn> carriers = lord.ownedPawns.Where(p => p.inventory != null && p.RaceProps.packAnimal).ToList();
-            if (carriers.Count == 0) carriers = new List<Pawn> { trader };
+            List<Pawn> carriers = lord.ownedPawns.Where(p => p.inventory != null).ToList();
+            if (carriers.Count == 0) return;
 
             List<Thing> vanillaGoods = new List<Thing>();
             foreach (var carrier in carriers)
             {
-                var inner = carrier.inventory.innerContainer;
-                var items = inner.Where(t => t.def.category == ThingCategory.Item).ToList();
-                vanillaGoods.AddRange(items);
+                vanillaGoods.AddRange(carrier.inventory.innerContainer.Where(t => t.def.category == ThingCategory.Item).ToList());
             }
 
+            // 1. Пополняем склад из каравана (если фракция новая или ее склад пуст)
             if (vanillaGoods.Count > 0)
             {
-                manager.DepositGoods(parms.faction, vanillaGoods);
+                var currentStock = manager.GetStockpile(parms.faction);
+                if (!manager.IsSimulatedFaction(parms.faction) || (currentStock != null && currentStock.inventory.Count == 0))
+                {
+                    manager.DepositGoods(parms.faction, vanillaGoods);
+                }
+            }
+
+            // 2. Очищаем караван от ванили
+            foreach (var carrier in carriers)
+            {
+                var inner = carrier.inventory.innerContainer;
+                for (int i = inner.Count - 1; i >= 0; i--)
+                {
+                    if (inner[i].def.category == ThingCategory.Item)
+                    {
+                        Thing t = inner[i];
+                        inner.Remove(t);
+                        t.Destroy();
+                    }
+                }
             }
 
             var stock = manager.GetStockpile(parms.faction);
             List<Thing> newThings = stock.GenerateRealThings(trader.TraderKind, false);
 
-            int carrierIndex = 0;
+            // РАЗДАЧА: Серебро и Товары - Вьючным
+            var packAnimalsOnly = carriers.Where(x => x.RaceProps.packAnimal).ToList();
+            Pawn silverTarget = (packAnimalsOnly.Count > 0) ? packAnimalsOnly[0] : trader;
+            int packIndex = 0;
+
             foreach (Thing t in newThings)
             {
-                carriers[carrierIndex].inventory.innerContainer.TryAdd(t);
-                carrierIndex = (carrierIndex + 1) % carriers.Count;
+                if (t == null || t.stackCount <= 0) continue;
+
+                // ДЕНЬГИ - На вьючное (если есть)
+                if (t.def == ThingDefOf.Silver)
+                {
+                    silverTarget.inventory.innerContainer.TryAdd(t);
+                }
+                else
+                {
+                    // ТОВАРЫ - На вьючное (или лидеру, если их нет)
+                    Pawn target = (packAnimalsOnly.Count > 0) ? packAnimalsOnly[packIndex % packAnimalsOnly.Count] : trader;
+                    target.inventory.innerContainer.TryAdd(t);
+                    packIndex++;
+                }
             }
 
             Patch_TradeSession_Setup.processedCaravans.Add(traderID);

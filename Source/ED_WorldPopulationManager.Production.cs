@@ -430,7 +430,7 @@ namespace EconomicsDemography
                     return currentLines.Count(x => GetGroup(x) == group) < 5;
                 }
 
-                bool IsSaturatedLocal(ThingDef d) => (stock.inventory.TryGetValue(d.defName, out int val) ? val : 0) >= (totalLiving * 15);
+                bool IsSaturatedLocal(ThingDef d) => stock.GetCount(d) >= (totalLiving * 15);
 
                 bool needRefresh = !monthlyProductionPlans.ContainsKey(fid) || Find.TickManager.TicksGame % 60000 == 0;
                 if (needRefresh)
@@ -521,11 +521,13 @@ namespace EconomicsDemography
                         if (myProgress[good.defName] >= actualMarketPrice)
                         {
                             int countToMake = Mathf.FloorToInt(myProgress[good.defName] / actualMarketPrice);
-                            int roomLeft = Mathf.RoundToInt(totalLiving * 3.0f) - (stock.inventory.TryGetValue(good.defName, out int existing) ? existing : 0);
+                            int roomLeft = Mathf.RoundToInt(totalLiving * 3.0f) - stock.GetCount(good);
                             if (roomLeft > 0)
                             {
                                 int finalCount = Mathf.Min(countToMake, roomLeft);
-                                stock.AddItem(good, finalCount);
+                                int q = -1;
+                                if (good.HasComp(typeof(CompQuality))) q = (int)stock.GenerateRandomQuality(good);
+                                stock.AddItem(good, finalCount, q);
                                 myProgress[good.defName] -= (finalCount * actualMarketPrice);
                                 productionValue -= (finalCount * actualMarketPrice);
                             }

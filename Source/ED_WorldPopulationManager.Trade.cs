@@ -57,13 +57,14 @@ namespace EconomicsDemography
                     int totalVictimHas = victimStock.inventory[targetKey];
                     int amountToSteal = Mathf.Clamp(Mathf.CeilToInt(totalVictimHas * stealPercent), 1, totalVictimHas);
                     
-                    ThingDef itemDef = DefDatabase<ThingDef>.GetNamedSilentFail(targetKey);
+                    VirtualStockpile.ParseKey(targetKey, out string defName, out int q1);
+                    ThingDef itemDef = DefDatabase<ThingDef>.GetNamedSilentFail(defName);
                     if (itemDef != null)
                     {
                         victimStock.inventory[targetKey] -= amountToSteal;
                         if (victimStock.inventory[targetKey] <= 0) victimStock.inventory.Remove(targetKey);
 
-                        actorStock.AddItem(itemDef, amountToSteal);
+                        actorStock.AddItem(itemDef, amountToSteal, q1);
                         Log.Message("ED_Log_Raid".Translate(actor.Name, amountToSteal, itemDef.label, victim.Name));
                     }
                 }
@@ -84,7 +85,8 @@ namespace EconomicsDemography
                     string keyA = actorStock.inventory
                         .Where(kvp => kvp.Value > 0 && kvp.Key != "Silver")
                         .OrderByDescending(kvp => {
-                            ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(kvp.Key);
+                            VirtualStockpile.ParseKey(kvp.Key, out string rawDefA, out _);
+                            ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(rawDefA);
                             if (d == null) return 0f;
                             float m = globalPriceModifiers.TryGetValue(d, out float val) ? val : 1.0f;
                             float priority = kvp.Value * (2.0f - m);
@@ -98,7 +100,8 @@ namespace EconomicsDemography
                         .FirstOrDefault();
 
                     if (keyA == null) continue;
-                    ThingDef defA = DefDatabase<ThingDef>.GetNamedSilentFail(keyA);
+                    VirtualStockpile.ParseKey(keyA, out string defNameA, out int qA);
+                    ThingDef defA = DefDatabase<ThingDef>.GetNamedSilentFail(defNameA);
                     if (defA == null) continue;
 
                     bool isMilitary = defA.IsWeapon || defA.IsApparel;
@@ -124,8 +127,9 @@ namespace EconomicsDemography
                     {
                         if (IsSaturated(defA, partnerStock, GetTotalLiving(partner)) && !actor.def.permanentEnemy) continue;
                         
-                        actorStock.AddItem(defA, -amountA);
-                        partnerStock.AddItem(defA, amountA);
+                        actorStock.inventory[keyA] -= amountA;
+                        if (actorStock.inventory[keyA] <= 0) actorStock.inventory.Remove(keyA);
+                        partnerStock.AddItem(defA, amountA, qA);
                         partnerStock.silver -= Mathf.RoundToInt(totalDealValue);
                         actorStock.silver += Mathf.RoundToInt(totalDealValue);
                         
@@ -138,19 +142,22 @@ namespace EconomicsDemography
                         string keyB = partnerStock.inventory
                             .Where(kvp => kvp.Value > 0 && kvp.Key != "Silver" && kvp.Key != keyA)
                             .OrderByDescending(kvp => {
-                                ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(kvp.Key);
+                                VirtualStockpile.ParseKey(kvp.Key, out string rawDefB, out _);
+                                ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(rawDefB);
                                 if (d == null) return 0f;
                                 float m = globalPriceModifiers.TryGetValue(d, out float v) ? v : 1.0f;
                                 return kvp.Value * (2.0f - m);
                             })
                             .Select(kvp => kvp.Key)
                             .FirstOrDefault(k => {
-                                ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(k);
+                                VirtualStockpile.ParseKey(k, out string rawDefB, out _);
+                                ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(rawDefB);
                                 return d != null && !IsSaturated(d, actorStock, GetTotalLiving(actor));
                             });
 
                         if (keyB == null) continue;
-                        ThingDef defB = DefDatabase<ThingDef>.GetNamedSilentFail(keyB);
+                        VirtualStockpile.ParseKey(keyB, out string defNameB, out int qB);
+                        ThingDef defB = DefDatabase<ThingDef>.GetNamedSilentFail(defNameB);
                         
                         if (defB == null || (isMilitary && defB.IsWeapon)) continue;
 
@@ -158,10 +165,14 @@ namespace EconomicsDemography
 
                         if (partnerStock.inventory.TryGetValue(keyB, out int pHas) && pHas >= amountB)
                         {
-                            actorStock.AddItem(defA, -amountA);
-                            partnerStock.AddItem(defA, amountA);
-                            partnerStock.AddItem(defB, -amountB);
-                            actorStock.AddItem(defB, amountB);
+                            actorStock.inventory[keyA] -= amountA;
+                            if (actorStock.inventory[keyA] <= 0) actorStock.inventory.Remove(keyA);
+
+                            partnerStock.inventory[keyB] -= amountB;
+                            if (partnerStock.inventory[keyB] <= 0) partnerStock.inventory.Remove(keyB);
+
+                            partnerStock.AddItem(defA, amountA, qA);
+                            actorStock.AddItem(defB, amountB, qB);
                             Log.Message("ED_Log_Barter".Translate(actor.Name, partner.Name, defA.label, defB.label));
                         }
                     }
@@ -174,7 +185,7 @@ namespace EconomicsDemography
         {
             if (d == null || s == null) return false;
 
-            int current = s.inventory.TryGetValue(d.defName, out int val) ? val : 0;
+            int current = s.GetCount(d);
 
             float threshold = pop * 3.0f;
             if (d.stackLimit > 1) threshold = pop * 6f;
@@ -191,7 +202,8 @@ namespace EconomicsDemography
                 string key = stock.inventory.Keys.RandomElement();
                 if (stock.inventory[key] <= 0) continue;
                 
-                ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(key);
+                VirtualStockpile.ParseKey(key, out string rDef, out _);
+                ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(rDef);
                 if (d != null && d.category == ThingCategory.Item && d != ThingDefOf.Silver) return key;
             }
             return null;

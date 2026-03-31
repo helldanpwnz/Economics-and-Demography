@@ -57,8 +57,12 @@ namespace EconomicsDemography
         private List<int> initialized = new List<int>();
         public Dictionary<int, int> ruinsExpiration = new Dictionary<int, int>();
         public Dictionary<int, int> orbitalBases = new Dictionary<int, int>();
+        public Dictionary<int, float> factionRaidDebt = new Dictionary<int, float>();
         private List<int> vagrantWarningsSent = new List<int>();
         private List<int> knownFactionIDs = new List<int>();
+
+        // Ограничитель спавна лута (чтобы не спавнить дважды)
+        public HashSet<int> processedSettlements = new HashSet<int>();
         public static bool IsManuallyAdding = false; 
         private bool initializedSession = false;
         
@@ -91,6 +95,11 @@ namespace EconomicsDemography
             Scribe_Collections.Look(ref factionLimitModifiers, "factionLimitModifiers", LookMode.Value, LookMode.Value);
             Scribe_Values.Look(ref initialWorldSilver, "initialWorldSilver", -1f);
             Scribe_Values.Look(ref currentInflation, "currentInflation", 1f);
+            Scribe_Collections.Look(ref factionRaidDebt, "factionRaidDebt", LookMode.Value, LookMode.Value);
+            Scribe_Collections.Look(ref processedSettlements, "processedSettlements", LookMode.Value);
+
+            if (Scribe.mode == LoadSaveMode.PostLoadInit && processedSettlements == null)
+                processedSettlements = new HashSet<int>();
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit && factionLimitModifiers == null) 
                 factionLimitModifiers = new Dictionary<int, float>();
@@ -106,6 +115,36 @@ namespace EconomicsDemography
                 foreach (var k in keys)
                 {
                     if (factionTraits[k] == "Alchemist") factionTraits[k] = "Chemist";
+                }
+
+                if (factionStockpiles != null)
+                {
+                    foreach (var kvp in factionStockpiles)
+                    {
+                        if (kvp.Value != null && factionTraits.TryGetValue(kvp.Key, out string trait))
+                        {
+                            kvp.Value.isWarrior = (trait == "Warrior");
+                            
+                            // Очистка старых сохранений от мусорного качества
+                            List<string> keysToMigrate = new List<string>();
+                            foreach (string key in kvp.Value.inventory.Keys.ToList())
+                            {
+                                if (key.EndsWith("_0") || key.EndsWith("_1")) 
+                                    keysToMigrate.Add(key);
+                            }
+                            foreach (string badKey in keysToMigrate)
+                            {
+                                int amount = kvp.Value.inventory[badKey];
+                                kvp.Value.inventory.Remove(badKey);
+                                
+                                string baseName = badKey.Substring(0, badKey.Length - 2);
+                                string goodKey = baseName + "_2"; // Подтягиваем до Normal
+                                
+                                if (!kvp.Value.inventory.ContainsKey(goodKey)) kvp.Value.inventory[goodKey] = 0;
+                                kvp.Value.inventory[goodKey] += amount;
+                            }
+                        }
+                    }
                 }
             }
             
@@ -137,6 +176,7 @@ namespace EconomicsDemography
             if (maturationBuffer == null) maturationBuffer = new Dictionary<int, float>();
             if (agingBuffer == null) agingBuffer = new Dictionary<int, float>();
             if (factionStockpiles == null) factionStockpiles = new Dictionary<int, VirtualStockpile>();
+            if (factionRaidDebt == null) factionRaidDebt = new Dictionary<int, float>();
         }
 
         public bool IsInitialized(Faction f)
@@ -203,8 +243,21 @@ namespace EconomicsDemography
                 factionElders[fid] = baseAdults * elderMulti;
                 factionPopulation[fid] = baseAdults;
 
+                // НАЗНАЧАЕМ СПЕЦИАЛИЗАЦИЮ ДО создания склада, чтобы isWarrior был выставлен при генерации стартовых товаров
+                if (!factionTraits.ContainsKey(fid))
+                {
+                    int homeTile = -1;
+                    var settlement = Find.WorldObjects.Settlements.FirstOrDefault(s => s.Faction == f);
+                    if (settlement != null) homeTile = settlement.Tile;
+
+                    factionTraits[fid] = AnalyzeTileForArchetype(homeTile, f);
+                    Log.Message(string.Format((string)"ED_Log_EconomyPathChosen".Translate(), f.Name, factionTraits[fid]));
+                }
+
                 // Стартовое серебро теперь генерируется внутри GenerateStartingStock и масштабируется от поселений, а не от голов населения.
-                GetStockpile(f); 
+                // isWarrior будет выставлен внутри GetStockpile -> GenerateStartingStock благодаря коду ниже
+                var initStock = GetStockpile(f); 
+                if (initStock != null) initStock.isWarrior = (factionTraits[fid] == "Warrior");
                 
                 float targetFR = GetFactionRealFemaleRatio(f);
                 float femaleRatio = targetFR >= 0f ? targetFR : Rand.Range(0.40f, 0.60f); 
@@ -214,17 +267,6 @@ namespace EconomicsDemography
                 maturationBuffer[fid] = 0f;
                 agingBuffer[fid] = 0f;
                 
-                // НОВОЕ: Назначаем специализацию
-                if (!factionTraits.ContainsKey(fid))
-                {
-                    int homeTile = -1;
-                    var settlement = Find.WorldObjects.Settlements.FirstOrDefault(s => s.Faction == f);
-                    if (settlement != null) homeTile = settlement.Tile;
-
-                    factionTraits[fid] = AnalyzeTileForArchetype(homeTile, f);
-
-                    Log.Message(string.Format((string)"ED_Log_EconomyPathChosen".Translate(), f.Name, factionTraits[fid]));
-                }
                 initialized.Add(fid);
             }
 
@@ -566,6 +608,7 @@ namespace EconomicsDemography
             if (f == null || f.IsPlayer) return;
             int fid = f.loadID;
             string trait = factionTraits.TryGetValue(fid, out string t) ? t : "Generalist";
+            stock.isWarrior = (trait == "Warrior");
             TechLevel tech = f.def.techLevel;
 
             // 1. Базовый набор выживания для всех (масштабируется от кол-ва баз и тех-уровня)
@@ -593,10 +636,10 @@ namespace EconomicsDemography
                 if (trait == "Warrior")
                 {
                     var weapons = potential.Where(x => x.IsWeapon).InRandomOrder().Take(5);
-                    foreach (var w in weapons) stock.AddItem(w, Rand.Range(1, 3));
+                    foreach (var w in weapons) stock.AddItem(w, Rand.Range(1, 3), (int)stock.GenerateRandomQuality(w));
                     
                     var armor = potential.Where(x => x.IsApparel && x.statBases.Any(s => s.stat == StatDefOf.ArmorRating_Sharp && s.value > 0.1f)).InRandomOrder().Take(3);
-                    foreach (var a in armor) stock.AddItem(a, Rand.Range(1, 2));
+                    foreach (var a in armor) stock.AddItem(a, Rand.Range(1, 2), (int)stock.GenerateRandomQuality(a));
                 }
                 // Для животноводов жестко продукты животных
                 else if (trait == "Rancher")
@@ -615,7 +658,9 @@ namespace EconomicsDemography
                         // Количество растет от кол-ва поселений
                         int countBase = chosen.stackLimit > 1 ? Rand.Range(15, 60) : Rand.Range(1, 3);
                         int finalCount = countBase + (countBase * (mult / 4));
-                        stock.AddItem(chosen, finalCount);
+                        int q = -1;
+                        if (chosen.HasComp(typeof(CompQuality))) q = (int)stock.GenerateRandomQuality(chosen);
+                        stock.AddItem(chosen, finalCount, q);
                     }
                 }
             }
@@ -638,7 +683,10 @@ namespace EconomicsDemography
                 {
                     if (t.def == ThingDefOf.Silver || t.def.category == ThingCategory.Pawn || t.def.Minifiable) continue;
                     
-                    stock.AddItem(t.def, t.stackCount);
+                    int quality = -1;
+                    if (t.TryGetComp<CompQuality>() is CompQuality qualityComp) quality = (int)qualityComp.Quality;
+
+                    stock.AddItem(t.def, t.stackCount, quality);
                     absorbedCount++;
                 }
                 
@@ -682,8 +730,14 @@ namespace EconomicsDemography
                 }
                 else
                 {
-                    ThingDef def = (item is MinifiedThing m) ? m.InnerThing.def : item.def;
-                    stock.AddItem(def, item.stackCount);
+                    Thing inner = (item is MinifiedThing m) ? m.InnerThing : item;
+                    ThingDef def = inner.def;
+                    int quality = -1;
+                    if (inner.TryGetComp<CompQuality>() is CompQuality qualityComp)
+                    {
+                        quality = (int)qualityComp.Quality;
+                    }
+                    stock.AddItem(def, item.stackCount, quality);
                 }
 
                 if (!item.Destroyed) item.Destroy();

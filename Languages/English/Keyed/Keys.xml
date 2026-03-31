@@ -102,6 +102,10 @@
   <ED_UI_Capital>Capital: {0}</ED_UI_Capital>
   <ED_UI_Silver>(Silver: {0})</ED_UI_Silver>
   <ED_UI_MainStocks>Main Stocks:</ED_UI_MainStocks>
+  <ED_UI_RaidDebt>Debt: {0}$</ED_UI_RaidDebt>
+  <ED_Log_RaidBankruptApplied>[E&amp;D] Faction {0} went bankrupt sending a raid. Stockpile cleared.</ED_Log_RaidBankruptApplied>
+  <ED_Log_RaidCostApplied>[E&amp;D] Faction {0} paid for raid: -{1}$</ED_Log_RaidCostApplied>
+  <ED_Log_RaidBlockedBankruptcy>[E&amp;D] Raid by {0} blocked: capital {1}$ &lt; required {2}$</ED_Log_RaidBlockedBankruptcy>
 
   <ED_Trait_Miner>Miners</ED_Trait_Miner>
   <ED_Trait_Farmer>Farmers</ED_Trait_Farmer>

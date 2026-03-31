@@ -18,7 +18,7 @@ namespace EconomicsDemography
         private Vector2 scrollPosition = Vector2.zero;
         private float lastHeight = 0f;
 
-        public override Vector2 InitialSize => new Vector2(1250f, 820f);
+        public override Vector2 InitialSize => new Vector2(1400f, 820f);
 
         public override void DoWindowContents(Rect inRect)
         {
@@ -152,20 +152,51 @@ namespace EconomicsDemography
             float econX = rect.x + 880f;
             // Заголовок на одной линии с жителями
             Rect econTitleRect = new Rect(econX, midY - 80f, 350f, 30f);
-            string capValue = $"<color=#00ff00>{wealth:F0} $</color>";
+            string capValue = $"<color=#00ff00>{wealth:F0}</color>";
             string silValue = "ED_UI_Silver".Translate(stock.silver);
-            Widgets.Label(econTitleRect, "ED_UI_Capital".Translate(capValue) + " " + silValue);
+            string capLine = "ED_UI_Capital".Translate(capValue) + " " + silValue;
+            
+            // Долг за рейд
+            float raidDebt = manager.factionRaidDebt.TryGetValue(f.loadID, out float rd) ? rd : 0f;
+            
+            Widgets.Label(econTitleRect, capLine);
+            
+            float invY = midY - 45f;
+
+            if (raidDebt > 0f)
+            {
+                Rect debtRect = new Rect(econX, invY, 350f, 20f);
+                Widgets.Label(debtRect, $"<color=#ff4444>▼ {"ED_UI_RaidDebt".Translate(raidDebt.ToString("F0"))}</color>");
+                invY += 18f;
+            }
             
             // Список под заголовок
-            Rect econInvRect = new Rect(econX, midY - 45f, 350f, 110f);
+            Rect econInvRect = new Rect(econX, invY, 350f, 110f);
             if (stock.inventory.Count > 0)
             {
-                var top = stock.inventory.OrderByDescending(kvp => kvp.Value).Take(4).ToList();
+                var top = stock.inventory
+                    .Select(kvp => {
+                        string defName;
+                        int q;
+                        VirtualStockpile.ParseKey(kvp.Key, out defName, out q);
+                        ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(defName);
+                        float val = (d != null) ? d.BaseMarketValue * VirtualStockpile.GetQualityMultiplier(q) * kvp.Value : 0f;
+                        return new { Key = kvp.Key, Value = kvp.Value, TotalVal = val };
+                    })
+                    .OrderByDescending(x => x.TotalVal)
+                    .Take(4)
+                    .ToList();
                 StringBuilder sbE = new StringBuilder();
                 sbE.AppendLine("<color=#bbbbbb>" + "ED_UI_MainStocks".Translate() + "</color>");
-                foreach(var kvp in top) {
-                    ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(kvp.Key);
-                    if (d != null) sbE.AppendLine($"  - <color=#77ffff>{d.label}</color> x{kvp.Value}");
+                foreach(var x in top) {
+                    string defName;
+                    int q;
+                    VirtualStockpile.ParseKey(x.Key, out defName, out q);
+                    ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(defName);
+                    if (d != null) {
+                        string qualityLabel = (q >= 0) ? $" ({((QualityCategory)q).GetLabel()})" : "";
+                        sbE.AppendLine($"  - <color=#77ffff>{d.label}</color>{qualityLabel} x{x.Value}");
+                    }
                 }
                 Widgets.Label(econInvRect, sbE.ToString());
             }

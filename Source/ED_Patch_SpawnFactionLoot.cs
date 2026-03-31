@@ -15,8 +15,6 @@ namespace EconomicsDemography
     [HarmonyPatch(typeof(MapGenerator), "GenerateMap")]
     public static class Patch_SpawnFactionLoot
     {
-        public static HashSet<int> processedSettlements = new HashSet<int>();
-
         [HarmonyPostfix]
         static void Postfix(Map __result)
         {
@@ -28,11 +26,11 @@ namespace EconomicsDemography
             Faction f = settlement.Faction;
             if (f == null || f.IsPlayer) return;
 
-            if (processedSettlements.Contains(settlement.ID)) return;
-            processedSettlements.Add(settlement.ID);
-
             var manager = Find.World.GetComponent<WorldPopulationManager>();
             if (manager == null) return;
+
+            if (manager.processedSettlements.Contains(settlement.ID)) return;
+            manager.processedSettlements.Add(settlement.ID);
 
             VirtualStockpile stock = manager.GetStockpile(f);
             if (stock == null) return;
@@ -42,6 +40,17 @@ namespace EconomicsDemography
 
             IntVec3 rootSpot = FindBestLootSpot(map, f);
             
+            // Считаем стоимость ванильных предметов, которые игра уже разложила на карте.
+            // ReabsorbLootOnLeave соберёт их при уходе, поэтому списываем заранее.
+            float vanillaGroundValue = 0f;
+            foreach (var t in map.listerThings.AllThings)
+            {
+                if (t.def.category != ThingCategory.Item) continue;
+                if (t.ParentHolder is Pawn) continue;
+                if (t.def.defName.Contains("Chunk")) continue;
+                vanillaGroundValue += t.def.BaseMarketValue * t.stackCount;
+            }
+
             List<Thing> allLoot = new List<Thing>();
 
             if (stock.silver > 0)
@@ -67,17 +76,24 @@ namespace EconomicsDemography
                 int totalAmount = stock.inventory[key];
                 if (totalAmount <= 0) continue;
 
+                string defName;
+                int q;
+                VirtualStockpile.ParseKey(key, out defName, out q);
+
                 int share = totalAmount / basesCount;
                 if (share == 0 && totalAmount > 0 && Rand.Value < 0.3f) share = 1;
 
                 if (share > 0)
                 {
-                    ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail(key);
+                    ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail(defName);
                     if (def != null)
                     {
+                        // На полу в поселении — по 1 экземпляру каждого вида оружия/брони
+                        if (def.stackLimit == 1) share = 1;
+
                         stock.inventory[key] -= share;
                         if (stock.inventory[key] < 0) stock.inventory[key] = 0;
-                        CreateAndAddThings(def, share, allLoot);
+                        CreateAndAddThings(def, share, allLoot, q);
                     }
                 }
             }
@@ -85,6 +101,31 @@ namespace EconomicsDemography
             if (allLoot.Count > 0)
             {
                 DistributeLootThematic(map, rootSpot, allLoot, f);
+            }
+
+            // Списываем стоимость ИНВЕНТАРЯ защитников (только то, что WorldPawns_SaveInventory вернёт при уходе).
+            // Броню и оружие НЕ считаем — они не возвращаются на склад при удалении карты поселения.
+            float defenderGearValue = 0f;
+            foreach (Pawn pawn in map.mapPawns.SpawnedPawnsInFaction(f))
+            {
+                if (pawn.inventory != null)
+                    foreach (var i in pawn.inventory.innerContainer) defenderGearValue += (i.def.BaseMarketValue * i.stackCount);
+            }
+
+            float totalMapCost = defenderGearValue + vanillaGroundValue;
+
+            if (totalMapCost > 0f)
+            {
+                if (!stock.TryConsumeWealth(totalMapCost, manager.globalPriceModifiers, true))
+                {
+                    float wealthBefore = stock.GetTotalWealth();
+                    float unpaid = totalMapCost - wealthBefore;
+                    int fid = f.loadID;
+                    if (!manager.factionRaidDebt.ContainsKey(fid)) manager.factionRaidDebt[fid] = 0f;
+                    manager.factionRaidDebt[fid] += unpaid;
+                    stock.silver = 0;
+                    stock.inventory.Clear();
+                }
             }
         }
 
@@ -191,7 +232,7 @@ namespace EconomicsDemography
             }
         }
 
-        private static void CreateAndAddThings(ThingDef def, int count, List<Thing> outList)
+        private static void CreateAndAddThings(ThingDef def, int count, List<Thing> outList, int quality = -1)
         {
             int loopGuard = 0;
             while (count > 0 && loopGuard < 500)
@@ -211,7 +252,8 @@ namespace EconomicsDemography
 
                 Thing t = ThingMaker.MakeThing(def, stuff);
                 t.stackCount = stack;
-                t.TryGetComp<CompQuality>()?.SetQuality(QualityCategory.Normal, ArtGenerationContext.Outsider);
+                if (quality >= 0) t.TryGetComp<CompQuality>()?.SetQuality((QualityCategory)quality, ArtGenerationContext.Outsider);
+                else t.TryGetComp<CompQuality>()?.SetQuality(QualityCategory.Normal, ArtGenerationContext.Outsider);
                 outList.Add(t);
                 count -= stack;
                 loopGuard++;

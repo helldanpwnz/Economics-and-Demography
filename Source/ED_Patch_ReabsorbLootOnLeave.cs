@@ -47,9 +47,13 @@ namespace EconomicsDemography
 
             foreach (Thing t in itemsOnMap)
             {
-                if (t.HitPoints < t.MaxHitPoints * 0.5f) continue;
+                if (t.def.useHitPoints && t.HitPoints < t.MaxHitPoints * 0.5f) continue;
                 
                 if (t.ParentHolder is Pawn) continue;
+
+                // Игнорируем обломки (каменные/шлаковые глыбы)
+                if (t.def.thingCategories != null && t.def.thingCategories.Any(c => c.defName == "StoneChunks" || c.defName == "Chunks")) continue;
+                if (t.def.defName.Contains("Chunk")) continue;
 
                 if (t.def == ThingDefOf.Silver)
                 {
@@ -58,14 +62,19 @@ namespace EconomicsDemography
                 }
                 else
                 {
-                    stock.AddItem(t.def, t.stackCount);
+                    int quality = -1;
+                    if (t.TryGetComp<CompQuality>() is CompQuality qComp) quality = (int)qComp.Quality;
+                    stock.AddItem(t.def, t.stackCount, quality);
                     recoveredCount++;
                 }
             }
 
+            // Считаем стоимость всего, что собрали
+            float totalRecoveredValue = stock.GetTotalWealth();
+
             if (recoveredCount > 0 || silverRecovered > 0)
             {
-                Log.Message(string.Format((string)"ED_Log_RecoveryMapRemoval".Translate(), f.Name, recoveredCount, silverRecovered));
+                Log.Warning($"[ED-DEBUG-LOOT] ReabsorbLootOnLeave: {f.Name} получил {recoveredCount} предметов + {silverRecovered} серебра. Итого склад: {totalRecoveredValue:F0}");
             }
         }
     }
