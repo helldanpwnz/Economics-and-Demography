@@ -62,7 +62,7 @@ namespace EconomicsDemography
                 var inner = carrier.inventory.innerContainer;
                 for (int i = inner.Count - 1; i >= 0; i--)
                 {
-                    if (inner[i].def.category == ThingCategory.Item)
+                    if (inner[i].def.category == ThingCategory.Item && !carrier.RaceProps.Humanlike)
                     {
                         Thing t = inner[i];
                         inner.Remove(t);

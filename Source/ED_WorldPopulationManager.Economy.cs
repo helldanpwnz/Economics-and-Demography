@@ -54,13 +54,34 @@ public override void WorldComponentTick()
         private void RunDailyTasks()
         {
             CheckRuinsExpiration();
+            foreach (var f in Find.FactionManager.AllFactionsListForReading)
+            {
+                if (IsSimulatedFaction(f)) GetStockpile(f).MaintainVariety(this);
+            }
             ProcessDailyGrowth();
             RecalculateGlobalPrices();
             UpdatePlayerAssetsCache();
             ProcessDebtRepayment();
             
-            // === РАСЧЕТ ИНФЛЯЦИИ (Серебро к серебру) ===
+            // === РАСЧЕТ ИНФЛЯЦИИ (На душу населения) ===
             float totalSilverNow = CalculateTotalWorldSilver();
+            
+            // Считаем текущее население всего мира (Симулируемые фракции + Колонисты игрока)
+            float totalWorldPop = 0;
+            foreach (var f in Find.FactionManager.AllFactionsListForReading)
+            {
+                if (IsSimulatedFaction(f))
+                {
+                    totalWorldPop += GetTotalLiving(f);
+                }
+                else if (f.IsPlayer)
+                {
+                    foreach (var map in Find.Maps) totalWorldPop += map.mapPawns.FreeColonistsCount;
+                    foreach (var car in Find.WorldObjects.Caravans.Where(c => c.IsPlayerControlled)) totalWorldPop += car.pawns.InnerListForReading.Count(p => p.IsFreeColonist);
+                }
+            }
+            if (totalWorldPop <= 0) totalWorldPop = 100f; // Дефолт
+
             var factions = Find.FactionManager.AllFactionsListForReading;
 
             // === 0. ДИНАМИЧЕСКИЙ ЛИМИТ (НОВЫЕ ФРАКЦИИ) ===
@@ -74,35 +95,40 @@ public override void WorldComponentTick()
                     {
                         float startingSilver = GetStockpile(f).silver;
                         initialWorldSilver += startingSilver; 
+                        
+                        // Также индексируем базовое население при добавлении фракции
+                        if (initialWorldPop > 0) initialWorldPop += GetTotalLiving(f);
+
                         Log.Message(string.Format((string)"ED_Log_NewFactionAdded".Translate(), f.Name, startingSilver.ToString("F0")));
                     }
                     knownFactionIDs.Add(f.loadID);
                 }
             }            
-            // Авто-сброс, если точка отсчета "сломана" (например, осталась от тестов с Капиталом)
-            if (initialWorldSilver > totalSilverNow * 50f) 
+            
+            // Установка базового значения (самый первый расчет)
+            if (initialWorldSilver < 0 && totalSilverNow > 100) 
             {
-                initialWorldSilver = -1f;
-                Log.Message("ED_Log_InflationReset".Translate());
+                initialWorldSilver = totalSilverNow;
+                initialWorldPop = totalWorldPop;
+                Log.Message("ED_Log_InflationBaselineSet".Translate(initialWorldSilver.ToString("F0"), initialWorldPop.ToString("F0")));
             }
 
             // ПЛАВНАЯ КАЛИБРОВКА (РОСТ ЭКОНОМИКИ)
-            // Добавлена проверка на Золотой стандарт (без индексации)
             if (initialWorldSilver > 0 && !EconomicsDemographyMod.Settings.enableGoldStandard)
             {
                 initialWorldSilver = Mathf.Lerp(initialWorldSilver, totalSilverNow, EconomicsDemographyMod.Settings.homeostasisEfficiency);
+                if (initialWorldPop > 0) initialWorldPop = Mathf.Lerp(initialWorldPop, totalWorldPop, EconomicsDemographyMod.Settings.homeostasisEfficiency);
             }
 
-            // Установка базового значения (самый первый расчет)
-            if (initialWorldSilver < 0 && totalSilverNow > 500) 
-            {
-                initialWorldSilver = totalSilverNow;
-                Log.Message("ED_Log_InflationBaselineSet".Translate(initialWorldSilver.ToString("F0")));
-            }
-
-            float baseline = initialWorldSilver > 0 ? initialWorldSilver : totalSilverNow;
-            if (baseline <= 0) baseline = 10000f; // Дефолт
-            float targetInflation = Mathf.Clamp(totalSilverNow / baseline, 0.1f, 10000.0f);
+            // РАСЧЕТ: Серебро на человека (текущее vs базовое)
+            float currentPerCapita = totalSilverNow / totalWorldPop;
+            float initialPerCapita = (initialWorldSilver > 0 && initialWorldPop > 0) ? (initialWorldSilver / initialWorldPop) : currentPerCapita;
+            
+            if (initialPerCapita <= 0) initialPerCapita = 10f;
+            
+            float rawRatio = currentPerCapita / initialPerCapita;
+            float logScale = EconomicsDemographyMod.Settings.inflationLogScale;
+            float targetInflation = Mathf.Clamp(Mathf.Pow(rawRatio, logScale), 0.1f, 20.0f); // Кап 20х теперь безопаснее
 
             float currentFactor = EconomicsDemographyMod.Settings.inflationUpdateFactor;
             currentInflation = Mathf.Lerp(currentInflation, targetInflation, currentFactor); 
@@ -258,15 +284,51 @@ public override void WorldComponentTick()
                 }
             }
 
-            int totalWorldPop = Find.FactionManager.AllFactions
-                .Where(f => IsSimulatedFaction(f))
-                .Sum(f => this.GetTotalLiving(f));
+            // 1. Сбор динамических данных мира
+            Dictionary<TechLevel, int> techPop = new Dictionary<TechLevel, int>();
+            foreach (TechLevel tl in Enum.GetValues(typeof(TechLevel))) techPop[tl] = 0;
+            foreach (var f in Find.FactionManager.AllFactionsListForReading) {
+                if (IsSimulatedFaction(f)) techPop[f.def.techLevel] += GetTotalLiving(f);
+            }
+            int totalWorldPop = techPop.Values.Sum();
+            if (totalWorldPop <= 0) return;
 
+            float totalSilverNow = CalculateTotalWorldSilver();
             int activeFactionCountInt = Find.FactionManager.AllFactions.Count(fac => IsSimulatedFaction(fac));
-            if (activeFactionCountInt <= 0) activeFactionCountInt = 5; 
-            float activeFactionCount = (float)activeFactionCountInt;
+            float activeFactionNum = (float)Mathf.Max(1, activeFactionCountInt);
 
-            float demandMult = Mathf.Max(0.5f, totalWorldPop / (activeFactionCount * 25f)); 
+            HashSet<ThingDef> allTradeableItems = new HashSet<ThingDef>();
+            foreach (var list in rawResourcesCache.Values) if (list != null) allTradeableItems.UnionWith(list);
+            foreach (var list in manufacturedCache.Values) if (list != null) allTradeableItems.UnionWith(list);
+            foreach (var list in foodCache.Values) if (list != null) allTradeableItems.UnionWith(list);
+
+            // 2. Предварительный расчет "Мировой емкости" (Общий вес всех хотелок)
+            Dictionary<ThingDef, float> rawWeights = new Dictionary<ThingDef, float>();
+            float totalGlobalWeight = 0f;
+
+            foreach (ThingDef def in allTradeableItems) {
+                if (def == null || def == ThingDefOf.Silver) continue;
+
+                float priceBase = Mathf.Max(1.5f, def.BaseMarketValue);
+                float importance = 1.0f / Mathf.Sqrt(priceBase);
+                
+                float catMult = 0.5f;
+                if (def.IsIngestible) catMult = 2.0f;
+                else if (def.IsStuff || def.IsMedicine) catMult = 1.0f;
+
+                float techFactor = 0f;
+                foreach (var kvp in techPop) {
+                    if (kvp.Value <= 0) continue;
+                    float w = (float)kvp.Value / totalWorldPop;
+                    if (kvp.Key >= def.techLevel) techFactor += w;
+                    else techFactor += w * ((int)def.techLevel - (int)kvp.Key == 1 ? 0.15f : 0.02f);
+                }
+
+                float finalW = importance * catMult * techFactor;
+                rawWeights[def] = finalW;
+                totalGlobalWeight += finalW;
+            }
+            if (totalGlobalWeight <= 0) totalGlobalWeight = 1f;
 
             Dictionary<ThingDef, float> newModifiers = new Dictionary<ThingDef, float>();
             Dictionary<string, int> totalWorldStock = new Dictionary<string, int>();
@@ -288,63 +350,44 @@ public override void WorldComponentTick()
                 totalWorldStock[item.Key] += item.Value;
             }
 
-            HashSet<ThingDef> allTradeableItems = new HashSet<ThingDef>();
-            foreach (var list in rawResourcesCache.Values) if (list != null) allTradeableItems.UnionWith(list);
-            foreach (var list in manufacturedCache.Values) if (list != null) allTradeableItems.UnionWith(list);
-            foreach (var list in foodCache.Values) if (list != null) allTradeableItems.UnionWith(list);
+
+
+            float assetsToSilverRatio = 8.0f; 
+            float targetGlobalAssetValue = totalSilverNow * assetsToSilverRatio;
 
             foreach (ThingDef def in allTradeableItems)
             {
-                if (def == null || def == ThingDefOf.Silver) continue;
+                if (!rawWeights.TryGetValue(def, out float weight)) continue;
+
+                float priceBase = Mathf.Max(1.0f, def.BaseMarketValue);
+                float itemTargetValue = targetGlobalAssetValue * (weight / totalGlobalWeight);
+                float equilibriumQty = itemTargetValue / priceBase;
+                
+                if (def.stackLimit <= 1) equilibriumQty = Mathf.Max(equilibriumQty, activeFactionNum * 0.5f);
+                else equilibriumQty = Mathf.Max(equilibriumQty, activeFactionNum * 15f);
 
                 int currentAmount = totalWorldStock.ContainsKey(def.defName) ? totalWorldStock[def.defName] : 0;
-
-                float breakEvenPoint = activeFactionCount * def.stackLimit * 0.10f * demandMult * 0.2f; 
-                float surplusPoint = activeFactionCount * def.stackLimit * 0.8f * demandMult * 0.2f;
-
-                if (def.stackLimit > 1) {
-                    breakEvenPoint = Mathf.Max(breakEvenPoint, 8.0f * demandMult);
-                    surplusPoint = Mathf.Max(surplusPoint, 30.0f * demandMult);
-                } else {
-                    breakEvenPoint = Mathf.Max(breakEvenPoint, 1.0f);
-                    surplusPoint = Mathf.Max(surplusPoint, 3.0f);
-                }
-
-                float elasticity = 1.0f; 
-                if (def.IsIngestible || def.IsMedicine) elasticity = 0.4f;
-                else if (def.IsWeapon || def.IsApparel) elasticity = 0.8f;
-                else if (def.BaseMarketValue > 500f) elasticity = 1.5f;
-
                 float targetPriceMult = 1.0f;
-                
-                if (currentAmount < breakEvenPoint)
-                {
-                    float deficitFactor = 1f - ((float)currentAmount / breakEvenPoint);
-                    targetPriceMult = 1.0f + (deficitFactor * (0.6f / elasticity)); 
-                }
-                else if (currentAmount > surplusPoint)
-                {
-                    float surplusFactor = surplusPoint / (float)currentAmount;
-                    targetPriceMult = Mathf.Lerp(1.0f, surplusFactor, 0.5f / elasticity); 
+
+                float ratio = (float)currentAmount / equilibriumQty;
+                if (ratio < 0.85f) { // Дефицит
+                    targetPriceMult = 1.0f + (1.0f - ratio) * 2.0f;
+                } else if (ratio > 1.3f) { // Избыток
+                    targetPriceMult = 1.3f / ratio;
                 }
 
-                targetPriceMult *= Rand.Range(0.95f, 1.05f); 
-                targetPriceMult = Mathf.Clamp(targetPriceMult, 0.2f, 5.0f);
+                targetPriceMult *= Rand.Range(0.97f, 1.03f);
+                targetPriceMult = Mathf.Clamp(targetPriceMult, 0.15f, 10.0f);
 
                 float oldMult = this.globalPriceModifiers.TryGetValue(def, out float old) ? old : 1.0f;
-                
                 float finalSmoothedMult = Mathf.Lerp(oldMult, targetPriceMult, EconomicsDemographyMod.Settings.priceUpdateFactor);
-
-                if (Mathf.Abs(finalSmoothedMult - 1.0f) < 0.01f) finalSmoothedMult = 1.0f;
-
-                if (Mathf.Abs(finalSmoothedMult - 1.0f) > 0.001f)
-                {
-                    newModifiers[def] = finalSmoothedMult;
-                }
+                
+                if (Mathf.Abs(finalSmoothedMult - 1.0f) < 0.005f) finalSmoothedMult = 1.0f;
+                if (finalSmoothedMult != 1.0f) newModifiers[def] = finalSmoothedMult;
             }
-            
+
             this.globalPriceModifiers = newModifiers;
-            Log.Message(string.Format((string)"ED_Log_MarketUpdated".Translate(), totalWorldPop, demandMult.ToString("F2")));
+            Log.Message(string.Format((string)"ED_Log_MarketUpdated".Translate(), totalWorldPop, totalSilverNow.ToString("F0")));
         }
 
         private void UpdatePlayerAssetsCache()
@@ -435,6 +478,48 @@ public override void WorldComponentTick()
                 }
             }
 
+            return total;
+        }
+
+        public float CalculateTotalWorldPopulation()
+        {
+            float total = 0;
+            foreach (var f in Find.FactionManager.AllFactionsListForReading)
+            {
+                if (IsSimulatedFaction(f))
+                {
+                    total += GetTotalLiving(f);
+                }
+                else if (f.IsPlayer)
+                {
+                    foreach (var map in Find.Maps) total += map.mapPawns.FreeColonistsCount;
+                    foreach (var car in Find.WorldObjects.Caravans.Where(c => c.IsPlayerControlled)) total += car.pawns.InnerListForReading.Count(p => p.IsFreeColonist);
+                }
+            }
+            return total;
+        }
+
+        public float CalculateTotalWorldWealth()
+        {
+            float total = 0f;
+            foreach (var f in Find.FactionManager.AllFactionsListForReading)
+            {
+                if (IsSimulatedFaction(f))
+                {
+                    total += GetStockpile(f).GetTotalWealth();
+                }
+                else if (f.IsPlayer)
+                {
+                    foreach (var map in Find.Maps) total += map.wealthWatcher.WealthTotal;
+                    foreach (var car in Find.WorldObjects.Caravans.Where(c => c.IsPlayerControlled))
+                    {
+                        foreach (var t in car.AllThings)
+                        {
+                            total += t.MarketValue * t.stackCount;
+                        }
+                    }
+                }
+            }
             return total;
         }
     }

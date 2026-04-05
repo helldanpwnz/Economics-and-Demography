@@ -31,6 +31,7 @@ namespace EconomicsDemography
         // === ИНФЛЯЦИЯ ===
         public float initialWorldSilver = -1f;
         public float currentInflation = 1f;
+        public float initialWorldPop = -1f;
         
         // Счетчик глубины вызовов: скрывать инфляцию от Рассказчика и статистики богатства
         [ThreadStatic]
@@ -38,9 +39,9 @@ namespace EconomicsDemography
         public static bool IsCalculatingWealth => WealthCalculationDepth > 0;
         
         // 1. КЭШ (Разбитый по категориям)
-        private static Dictionary<TechLevel, List<ThingDef>> rawResourcesCache = new Dictionary<TechLevel, List<ThingDef>>();
-        private static Dictionary<TechLevel, List<ThingDef>> manufacturedCache = new Dictionary<TechLevel, List<ThingDef>>();
-        private static Dictionary<TechLevel, List<ThingDef>> foodCache = new Dictionary<TechLevel, List<ThingDef>>();
+        public static Dictionary<TechLevel, List<ThingDef>> rawResourcesCache = new Dictionary<TechLevel, List<ThingDef>>();
+        public static Dictionary<TechLevel, List<ThingDef>> manufacturedCache = new Dictionary<TechLevel, List<ThingDef>>();
+        public static Dictionary<TechLevel, List<ThingDef>> foodCache = new Dictionary<TechLevel, List<ThingDef>>();
         public Dictionary<int, FactionProductionProgress> productionProgress = new Dictionary<int, FactionProductionProgress>();
         public static WorldPopulationManager Instance;
         private static bool isCacheInitialized = false;
@@ -95,6 +96,7 @@ namespace EconomicsDemography
             Scribe_Collections.Look(ref factionLimitModifiers, "factionLimitModifiers", LookMode.Value, LookMode.Value);
             Scribe_Values.Look(ref initialWorldSilver, "initialWorldSilver", -1f);
             Scribe_Values.Look(ref currentInflation, "currentInflation", 1f);
+            Scribe_Values.Look(ref initialWorldPop, "initialWorldPop", -1f);
             Scribe_Collections.Look(ref factionRaidDebt, "factionRaidDebt", LookMode.Value, LookMode.Value);
             Scribe_Collections.Look(ref processedSettlements, "processedSettlements", LookMode.Value);
 
@@ -243,7 +245,16 @@ namespace EconomicsDemography
                 factionElders[fid] = baseAdults * elderMulti;
                 factionPopulation[fid] = baseAdults;
 
-                // НАЗНАЧАЕМ СПЕЦИАЛИЗАЦИЮ ДО создания склада, чтобы isWarrior был выставлен при генерации стартовых товаров
+                // === ГЛОБАЛЬНОЕ РАСПРЕДЕЛЕНИЕ РОЛЕЙ ===
+                // Если это первая инициализация фракции в этой сессии (или новом мире), 
+                // проводим массовое распределение ролей для ВСЕХ симулируемых фракций сразу.
+                // Это гарантирует разнообразие (чтобы не было 20 лесорубов) и покрывает все необходимые роли.
+                if (factionTraits == null || factionTraits.Count == 0)
+                {
+                    BulkAssignTraits();
+                }
+
+                // НАЗНАЧАЕМ СПЕЦИАЛИЗАЦИЮ ДО создания склада, если она всё еще отсутствует
                 if (!factionTraits.ContainsKey(fid))
                 {
                     int homeTile = -1;
@@ -625,7 +636,7 @@ namespace EconomicsDemography
                 stock.AddItem(ThingDefOf.MealSurvivalPack, Rand.Range(30, 60) * mult);
                 stock.AddItem(ThingDefOf.MedicineIndustrial, Rand.Range(8, 15) * mult);
             }
-            stock.silver += Rand.Range(500, 1500) * mult;
+            stock.silver += Rand.Range(3000, 8000) * mult;
 
             // 2. Специализированные товары по архетипу
             List<ThingDef> potential = GetPotentialGoodsFor(f);
@@ -649,7 +660,7 @@ namespace EconomicsDemography
                 }
 
                 // Добавляем стаки товаров согласно весам нашего архетипа (масштабируем кол-во линий от размера фракции)
-                int lineCount = 15 + (mult * 3); 
+                int lineCount = 8 + mult; 
                 for (int i = 0; i < lineCount; i++)
                 {
                     ThingDef chosen = potential.RandomElementByWeight(d => GetWeightForDef(d, trait));
@@ -748,6 +759,82 @@ namespace EconomicsDemography
         {
             if (pawn?.health?.hediffSet == null) return false;
             return pawn.health.hediffSet.hediffs.Any(h => h.def.defName == "Pregnant" || h.def.defName == "PregnancyHuman" || h.def.defName == "Pregnancy");
+        }
+
+        // Массовое распределение ролей при старте мира или первом вызове
+        private void BulkAssignTraits()
+        {
+            if (factionTraits == null) factionTraits = new Dictionary<int, string>();
+
+            // 1. Получаем список всех симулируемых фракций, которым еще не назначена роль
+            var allSimulated = Find.FactionManager.AllFactions
+                .Where(f => IsSimulatedFaction(f) && !factionTraits.ContainsKey(f.loadID))
+                .InRandomOrder()
+                .ToList();
+
+            if (!allSimulated.Any()) return;
+
+            // 2. Создаем перемешанный пул ролей, чтобы гарантировать покрытие всех архетипов
+            List<string> rolePool = new List<string>(economicArchetypes);
+            rolePool.Remove("Generalist");
+            rolePool.Shuffle();
+
+            int roleIdx = 0;
+            foreach (var f in allSimulated)
+            {
+                // Берём следующую роль из пула (зацикливаем, если фракций больше чем ролей)
+                string candidate = rolePool[roleIdx % rolePool.Count];
+                roleIdx++;
+
+                int tile = -1;
+                var settlement = Find.WorldObjects.Settlements.FirstOrDefault(s => s.Faction == f);
+                if (settlement != null) tile = settlement.Tile;
+
+                // 3. ПРОВЕРКА НА СОВМЕСТИМОСТЬ (Биомная логика)
+                // Если роль критически не подходит (например, фермер в космосе), 
+                // используем стандартный взвешенный выбор, который учитывает биом и уже занятые роли.
+                if (tile != -1 && IsIncompatibleWithBiome(tile, f, candidate))
+                {
+                    factionTraits[f.loadID] = AnalyzeTileForArchetype(tile, f);
+                }
+                else
+                {
+                    factionTraits[f.loadID] = candidate;
+                }
+                
+                Log.Message(string.Format((string)"ED_Log_EconomyPathChosenBulk".Translate(), f.Name, factionTraits[f.loadID]));
+            }
+        }
+
+        private bool IsIncompatibleWithBiome(int tile, Faction f, string role)
+        {
+            if (f != null && f.def.defName == "TradersGuild" && role != "Wholesale" && role != "Technician" && role != "Warrior") return true;
+            if (tile < 0 || tile >= Find.WorldGrid.TilesCount) return false;
+
+            object tileObj = Find.WorldGrid[tile];
+            string tName = tileObj.GetType().Name;
+            bool isSpace = tName.Contains("Space") || tName.Contains("Asteroid") || tName.Contains("Vacuum");
+
+            // Исключения для космоса (согласно правилам пользователя)
+            if (isSpace)
+            {
+                if (role == "Fisherman" || role == "Farmer" || role == "Rancher" || role == "Hunter" || role == "Lumberjack") 
+                    return true;
+            }
+
+            // Исключения для агрессивных фракций (пираты, каннибалы и т.д. не могут быть фермерами/медиками)
+            if (f != null)
+            {
+                string fn = f.def.defName.ToLowerInvariant();
+                if (fn.Contains("pirate") || fn.Contains("cannibal") || fn.Contains("waster") || fn.Contains("mercenary"))
+                {
+                    // Пираты не занимаются мирным трудом (фермерство/медицина). Остальное (лесоруб/охотник) допустимо.
+                    if (role == "Farmer" || role == "Rancher" || role == "Medical" || role == "Jeweler" || role == "Tailor")
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         public float GetFactionRealFemaleRatio(Faction f)

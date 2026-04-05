@@ -17,7 +17,7 @@ namespace EconomicsDemography
     {
         public Dictionary<string, int> inventory = new Dictionary<string, int>();
         public int silver = 1000;
-        public int maxSlots = 50;
+        public int maxSlots = 100;
         public bool isWarrior = false;
 
         public void ExposeData()
@@ -307,8 +307,8 @@ namespace EconomicsDemography
 
                 ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail(defName);
                 
-                // Оставляем только защиту от пешек и битых ссылок
-                if (def == null || def.category == ThingCategory.Pawn) continue;
+                // Исключаем Xenogerm и Genepack (Biotech), так как они требуют генного набора и ломают CanStackTogether
+                if (def == null || def.category == ThingCategory.Pawn || def.defName == "Xenogerm" || def.defName == "Genepack") continue;
 
                 if (def.tradeTags == null) def.tradeTags = new List<string>();
                 if (def.thingCategories == null) def.thingCategories = new List<ThingCategoryDef>();
@@ -406,6 +406,48 @@ namespace EconomicsDemography
                 }
 
                 things.RemoveAll(x => x == null);
+
+                // 3. ПРИНУДИТЕЛЬНОЕ РАЗНООБРАЗИЕ (Variety Force) - Если товаров мало, дозакупаем за серебро фракции
+                if (!isBaseTrade && traderKind != null && things.Count < 40 && silver > 200)
+                {
+                    var manager = WorldPopulationManager.Instance;
+                    if (manager != null)
+                    {
+                        HashSet<ThingDef> alreadyHas = new HashSet<ThingDef>(things.Select(x => x.def));
+                        List<ThingDef> possible = WorldPopulationManager.rawResourcesCache.Values.SelectMany(x => x)
+                            .Concat(WorldPopulationManager.manufacturedCache.Values.SelectMany(x => x))
+                            .Concat(WorldPopulationManager.foodCache.Values.SelectMany(x => x))
+                            .Where(d => d != null && !alreadyHas.Contains(d) && traderKind.WillTrade(d) && d.BaseMarketValue > 0)
+                            .InRandomOrder()
+                            .Take(100).ToList();
+
+                        int maxSpend = silver / 2; // Тратим не больше половины бюджета
+                        int spent = 0;
+
+                        foreach (ThingDef d in possible)
+                        {
+                            if (things.Count >= 55 || spent >= maxSpend) break;
+                            try 
+                            {
+                                int buyCount = d.stackLimit > 1 ? Rand.Range(15, 45) : 1;
+                                float cost = d.BaseMarketValue * buyCount;
+                                if (spent + cost > maxSpend) continue;
+
+                                ThingDef stuff = d.MadeFromStuff ? (GenStuff.DefaultStuffFor(d) ?? ThingDefOf.Steel) : null;
+                                Thing t = ThingMaker.MakeThing(d, stuff);
+                                t.stackCount = buyCount;
+
+                                var qc = t.TryGetComp<CompQuality>();
+                                if (qc != null) qc.SetQuality(GenerateRandomQuality(d), ArtGenerationContext.Outsider);
+
+                                things.Add(t);
+                                spent += Mathf.CeilToInt(cost);
+                            } catch { }
+                        }
+                        silver -= spent;
+                    }
+                }
+
                 return things;
             }
 
@@ -446,6 +488,69 @@ namespace EconomicsDemography
                     {
                         defName = testDefName;
                         quality = q;
+                    }
+                }
+            }
+        }
+        public void MaintainVariety(WorldPopulationManager manager)
+        {
+            // Стремление фракции поддерживать около 50 уникальных позиций в фоне (через закупку у соседей)
+            if (inventory.Count >= 50 || silver < 500) return;
+
+            int budget = silver / 5; // Бюджет на "закупку разнообразия" - 20% от текущего серебра
+            int spent = 0;
+
+            // 1. Получаем список всех остальных симулируемых фракций
+            var otherStocks = manager.factionStockpiles.Values.Where(s => s != this).ToList();
+            if (otherStocks.Count == 0) return;
+
+            // 2. Перемешиваем партнеров
+            otherStocks.Shuffle();
+
+            foreach (var seller in otherStocks)
+            {
+                if (inventory.Count >= 50 || spent >= budget) break;
+
+                // 3. Выбираем случайные товары у продавца, которых нет у нас
+                var potentialKeys = seller.inventory.Keys
+                    .Where(k => !inventory.ContainsKey(k))
+                    .InRandomOrder()
+                    .Take(5).ToList(); 
+
+                foreach (var key in potentialKeys)
+                {
+                    if (inventory.Count >= 50 || spent >= budget) break;
+
+                    ParseKey(key, out string dName, out int q);
+                    ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(dName);
+                    if (d == null) continue;
+
+                    // 4. Расчет стоимости
+                    float price = d.BaseMarketValue * GetQualityMultiplier(q);
+                    
+                    int amount = d.stackLimit > 1 ? Rand.Range(5, 15) : 1;
+                    
+                    if (seller.inventory.TryGetValue(key, out int sellerHas))
+                    {
+                        amount = Mathf.Min(amount, sellerHas);
+                    }
+                    else continue;
+
+                    float totalCost = price * amount;
+
+                    // 5. Проведение транзакции (Серебро переходит от нас к продавцу)
+                    if (spent + totalCost <= budget && amount > 0)
+                    {
+                        seller.inventory[key] -= amount;
+                        if (seller.inventory[key] <= 0) seller.inventory.Remove(key);
+                        
+                        this.AddItem(d, amount, q);
+                        
+                        int finalSilver = Mathf.RoundToInt(totalCost);
+                        this.silver -= finalSilver;
+                        seller.silver += finalSilver;
+                        
+                        spent += finalSilver;
                     }
                 }
             }

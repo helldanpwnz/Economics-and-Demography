@@ -13,6 +13,8 @@
   <ED_PriceUpdateFactorDesc>Насколько быстро цены подстраиваются под избыток или дефицит за один цикл обновления. 100% = мгновенно, 1% = очень плавно.</ED_PriceUpdateFactorDesc>
   <ED_InflationUpdateFactor>Скорость инфляции: {0}%</ED_InflationUpdateFactor>
   <ED_InflationUpdateFactorDesc>Насколько быстро глобальная инфляция подстраивается под изменение общего объема серебра в мире за один цикл. Помогает избежать резких скачков цен при крупных сделках игрока.</ED_InflationUpdateFactorDesc>
+  <ED_InflationSensitivity>Чувствительность инфляции: {0}%</ED_InflationSensitivity>
+  <ED_Setting_InflationLogScale>Логарифмическая шкала инфляции (0.5 = корень): {0}</ED_Setting_InflationLogScale>
   <ED_HomeostasisEfficiency>Скорость гомеостаза: {0}</ED_HomeostasisEfficiency>
   <ED_HomeostasisDesc>Как быстро базовая экономика впитывает новые объемы серебра (индексация ВВП). Чем ниже значение, тем дольше мир будет восстанавливаться после сильных макроэкономических потрясений.</ED_HomeostasisDesc>
   <ED_CapacitySettings>=== Лимит населения на поселение ===</ED_CapacitySettings>
@@ -89,7 +91,10 @@
   <ED_UI_TabDesc>Глобальная статистика населения и экономики мира.</ED_UI_TabDesc>
   <ED_UI_TabTitle>Демография и Экономика Мира</ED_UI_TabTitle>
   <ED_UI_ErrorNoData>Ошибка: Данные населения не найдены.</ED_UI_ErrorNoData>
-  <ED_UI_GlobalInflation>Глобальная инфляция: {0}</ED_UI_GlobalInflation>
+  <ED_UI_GlobalInflation>Инфляция: {0}</ED_UI_GlobalInflation>
+  <ED_UI_GlobalResidents>Жители: {0}</ED_UI_GlobalResidents>
+  <ED_UI_GlobalCapital>Капитал: {0}</ED_UI_GlobalCapital>
+  <ED_UI_GlobalSilver>Серебро: {0}</ED_UI_GlobalSilver>
   <ED_UI_TechLevelLabel>Тех-уровень: {0}</ED_UI_TechLevelLabel>
   <ED_UI_TraitLabel>Путь: {0}</ED_UI_TraitLabel>
   <ED_UI_TotalPop>Всего жителей: {0}</ED_UI_TotalPop>
@@ -162,6 +167,7 @@
 
   <!-- Финальные чистки -->
   <ED_Log_EconomyPathChosen>[E&amp;D Экономика] Фракция &lt;b&gt;{0}&lt;/b&gt; выбрала путь: {1}</ED_Log_EconomyPathChosen>
+  <ED_Log_EconomyPathChosenBulk>[E&amp;D Экономика] Массовое назначение {0}: выбран путь {1}</ED_Log_EconomyPathChosenBulk>
   <ED_Log_ItemGenerationError>[E&amp;D] Ошибка генерации предмета {0}: {1}. Замена на серебро.</ED_Log_ItemGenerationError>
   <ED_Log_ItemProcessError>[E&amp;D] Не удалось создать или обработать предмет {0}: {1}</ED_Log_ItemProcessError>
 </LanguageData>

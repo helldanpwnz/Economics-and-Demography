@@ -158,12 +158,12 @@ namespace EconomicsDemography
                 switch (f.def.techLevel)
                 {
                     case TechLevel.Animal:
-                    case TechLevel.Neolithic:   costPerPerson = 0.05f; break;  
-                    case TechLevel.Medieval:    costPerPerson = 0.10f; break;
-                    case TechLevel.Industrial:  costPerPerson = 0.25f; break; 
-                    case TechLevel.Spacer:      costPerPerson = 0.32f; break; 
-                    case TechLevel.Ultra:       costPerPerson = 0.36f; break; 
-                    case TechLevel.Archotech:   costPerPerson = 0.45f; break; 
+                    case TechLevel.Neolithic:   costPerPerson = 0.02f; break;  
+                    case TechLevel.Medieval:    costPerPerson = 0.05f; break;
+                    case TechLevel.Industrial:  costPerPerson = 0.12f; break; 
+                    case TechLevel.Spacer:      costPerPerson = 0.15f; break; 
+                    case TechLevel.Ultra:       costPerPerson = 0.20f; break; 
+                    case TechLevel.Archotech:   costPerPerson = 0.25f; break; 
                 }
 
                 float consumers = (adults * 1.0f) + (currentKids * 0.5f) + (currentElders * 0.7f);
@@ -656,12 +656,12 @@ namespace EconomicsDemography
             float costPerPerson = 0.2f; 
             switch (f.def.techLevel) {
                 case TechLevel.Animal:
-                case TechLevel.Neolithic: costPerPerson = 0.05f; break;
-                case TechLevel.Medieval:  costPerPerson = 0.10f; break;
-                case TechLevel.Industrial: costPerPerson = 0.25f; break;
-                case TechLevel.Spacer: costPerPerson = 0.32f; break;
-                case TechLevel.Ultra: costPerPerson = 0.36f; break;
-                case TechLevel.Archotech: costPerPerson = 0.45f; break;
+                case TechLevel.Neolithic: costPerPerson = 0.02f; break;
+                case TechLevel.Medieval:  costPerPerson = 0.05f; break;
+                case TechLevel.Industrial: costPerPerson = 0.12f; break;
+                case TechLevel.Spacer: costPerPerson = 0.15f; break;
+                case TechLevel.Ultra: costPerPerson = 0.20f; break;
+                case TechLevel.Archotech: costPerPerson = 0.25f; break;
             }
             float consumers = adults + (kVal * 0.5f) + (eVal * 0.7f);
             float adminOverhead = 1.0f + (consumers / 10000.0f);

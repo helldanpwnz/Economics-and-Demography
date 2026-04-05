@@ -22,9 +22,6 @@ namespace EconomicsDemography
 
         public override void DoWindowContents(Rect inRect)
         {
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(0f, 0f, 400f, 35f), "ED_UI_TabTitle".Translate());
-            
             var manager = Find.World.GetComponent<WorldPopulationManager>();
             if (manager == null)
             {
@@ -32,16 +29,25 @@ namespace EconomicsDemography
                 return;
             }
 
-            // Инфляция
+            Text.Font = GameFont.Medium;
+            // Глобальные показатели сверху (без общего заголовка)
+            float topY = 0f;
+            float totalPop = manager.CalculateTotalWorldPopulation();
+            float totalWealth = manager.CalculateTotalWorldWealth();
+            float totalSilver = manager.CalculateTotalWorldSilver();
+
+            Widgets.Label(new Rect(0f, topY, 350f, 40f), "ED_UI_GlobalResidents".Translate($"<color=#ffee00>{totalPop:N0}</color>"));
+            Widgets.Label(new Rect(350f, topY, 350f, 40f), "ED_UI_GlobalCapital".Translate($"<color=#00ff00>{totalWealth:N0}</color>"));
+            Widgets.Label(new Rect(700f, topY, 350f, 40f), "ED_UI_GlobalSilver".Translate($"<color=#77ffff>{totalSilver:N0}</color>"));
+
             if (EconomicsDemographyMod.Settings.enableGlobalInflation)
             {
                 float inflPercent = (manager.currentInflation - 1f) * 100f;
                 string inflationColor = manager.currentInflation > 1.1f ? "red" : (manager.currentInflation < 0.9f ? "cyan" : "green");
                 string inflationArrow = manager.currentInflation > 1.001f ? "▲" : (manager.currentInflation < 0.999f ? "▼" : "");
                 string sign = inflPercent > 0 ? "+" : "";
-                
                 string inflString = $"{inflationArrow} {sign}{inflPercent:F1}%";
-                Widgets.Label(new Rect(450f, 0f, 500f, 40f), "ED_UI_GlobalInflation".Translate($"<color={inflationColor}>{inflString}</color>"));
+                Widgets.Label(new Rect(1050f, topY, 350f, 40f), "ED_UI_GlobalInflation".Translate($"<color={inflationColor}>{inflString}</color>"));
             }
             Text.Font = GameFont.Small;
 
@@ -171,32 +177,29 @@ namespace EconomicsDemography
             }
             
             // Список под заголовок
-            Rect econInvRect = new Rect(econX, invY, 350f, 110f);
+            Rect econInvRect = new Rect(econX, invY, 350f, 130f);
             if (stock.inventory.Count > 0)
             {
-                var top = stock.inventory
+                var allItems = stock.inventory
                     .Select(kvp => {
-                        string defName;
-                        int q;
-                        VirtualStockpile.ParseKey(kvp.Key, out defName, out q);
-                        ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(defName);
-                        float val = (d != null) ? d.BaseMarketValue * VirtualStockpile.GetQualityMultiplier(q) * kvp.Value : 0f;
-                        return new { Key = kvp.Key, Value = kvp.Value, TotalVal = val };
+                        string dName; int q;
+                        VirtualStockpile.ParseKey(kvp.Key, out dName, out q);
+                        ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(dName);
+                        float unitPrice = (d != null) ? d.BaseMarketValue * VirtualStockpile.GetQualityMultiplier(q) : 0f;
+                        return new { Key = kvp.Key, Quantity = kvp.Value, UnitPrice = unitPrice, Def = d, Quality = q };
                     })
-                    .OrderByDescending(x => x.TotalVal)
-                    .Take(4)
+                    .Where(x => x.Def != null)
                     .ToList();
+
+                var expensive = allItems.OrderByDescending(x => x.UnitPrice).Take(2).ToList();
+                var numerous = allItems.Except(expensive).OrderByDescending(x => x.Quantity).Take(3).ToList();
+                var top = expensive.Concat(numerous).ToList();
+
                 StringBuilder sbE = new StringBuilder();
                 sbE.AppendLine("<color=#bbbbbb>" + "ED_UI_MainStocks".Translate() + "</color>");
                 foreach(var x in top) {
-                    string defName;
-                    int q;
-                    VirtualStockpile.ParseKey(x.Key, out defName, out q);
-                    ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(defName);
-                    if (d != null) {
-                        string qualityLabel = (q >= 0) ? $" ({((QualityCategory)q).GetLabel()})" : "";
-                        sbE.AppendLine($"  - <color=#77ffff>{d.label}</color>{qualityLabel} x{x.Value}");
-                    }
+                    string qualityLabel = (x.Quality >= 0) ? $" ({((QualityCategory)x.Quality).GetLabel()})" : "";
+                    sbE.AppendLine($"  - <color=#77ffff>{x.Def.label}</color>{qualityLabel} x{x.Quantity}");
                 }
                 Widgets.Label(econInvRect, sbE.ToString());
             }

@@ -13,6 +13,8 @@
   <ED_PriceUpdateFactorDesc>How fast prices adjust to surplus or deficit per update cycle. 100% = instant, 1% = very slow (smooth).</ED_PriceUpdateFactorDesc>
   <ED_InflationUpdateFactor>Inflation update speed: {0}%</ED_InflationUpdateFactor>
   <ED_InflationUpdateFactorDesc>How fast global inflation adjusts to changes in the total silver supply per cycle. Helps prevent sudden price shocks after large player trades.</ED_InflationUpdateFactorDesc>
+  <ED_InflationSensitivity>Inflation sensitivity (viscosity): {0}%</ED_InflationSensitivity>
+  <ED_Setting_InflationLogScale>Inflation log scale (0.5 = square root): {0}</ED_Setting_InflationLogScale>
   <ED_HomeostasisEfficiency>Homeostasis speed: {0}</ED_HomeostasisEfficiency>
   <ED_HomeostasisDesc>How fast the baseline economy digests new volumes of silver (GDP indexing). Lower values mean the world takes longer to recover from macroeconomic shocks.</ED_HomeostasisDesc>
   <ED_CapacitySettings>=== Population Capacity per Settlement ===</ED_CapacitySettings>
@@ -89,7 +91,10 @@
   <ED_UI_TabDesc>Global population and world economy statistics.</ED_UI_TabDesc>
   <ED_UI_TabTitle>World Demography &amp; Economy</ED_UI_TabTitle>
   <ED_UI_ErrorNoData>Error: Population data not found.</ED_UI_ErrorNoData>
-  <ED_UI_GlobalInflation>Global inflation: {0}</ED_UI_GlobalInflation>
+  <ED_UI_GlobalInflation>Inflation: {0}</ED_UI_GlobalInflation>
+  <ED_UI_GlobalResidents>Residents: {0}</ED_UI_GlobalResidents>
+  <ED_UI_GlobalCapital>Capital: {0}</ED_UI_GlobalCapital>
+  <ED_UI_GlobalSilver>Silver: {0}</ED_UI_GlobalSilver>
   <ED_UI_TechLevelLabel>Tech: {0}</ED_UI_TechLevelLabel>
   <ED_UI_TraitLabel>Path: {0}</ED_UI_TraitLabel>
   <ED_UI_TotalPop>Total inhabitants: {0}</ED_UI_TotalPop>
@@ -162,6 +167,7 @@
 
   <!-- Final Cleanups -->
   <ED_Log_EconomyPathChosen>[E&amp;D Economy] Faction &lt;b&gt;{0}&lt;/b&gt; chose path: {1}</ED_Log_EconomyPathChosen>
+  <ED_Log_EconomyPathChosenBulk>[E&amp;D Economy] Bulk assignment for {0}: path chosen: {1}</ED_Log_EconomyPathChosenBulk>
   <ED_Log_ItemGenerationError>[E&amp;D] Error generating item {0}: {1}. Replaced with silver.</ED_Log_ItemGenerationError>
   <ED_Log_ItemProcessError>[E&amp;D] Failed to create or process item {0}: {1}</ED_Log_ItemProcessError>
 </LanguageData>

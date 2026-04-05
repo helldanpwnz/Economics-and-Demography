@@ -100,6 +100,9 @@ namespace EconomicsDemography
             if (d.IsBlueprint || d.IsFrame) return false;
 
             if (typeof(IThingHolder).IsAssignableFrom(d.thingClass)) return false;
+            
+            // Исключаем Xenogerm и Genepack, так как они ломают CanStackTogether без инициализации генов
+            if (d.defName == "Xenogerm" || d.defName == "Genepack") return false;
 
             Thing t = null;
             try
@@ -112,6 +115,10 @@ namespace EconomicsDemography
                 {
                     foreach (var comp in twc.AllComps) { if (comp != null) _ = comp.GetType(); }
                 }
+
+                // Ультимативный тест на "торгуемость": ловит NRE (как в Biotech) при попытке сравнения предметов
+                _ = TransferableUtility.CanStackTogether(t, t);
+
                 return true; 
             }
             catch { return false; }
@@ -318,7 +325,8 @@ namespace EconomicsDemography
             foreach (var role in scores.Keys.ToList())
             {
                 int existingCount = factionTraits.Values.Count(v => v == role);
-                if (existingCount > 0) scores[role] *= Mathf.Max(0.1f, 1.0f - (existingCount * 0.10f));
+                // Бонус к разнообразию: Снижаем вес роли за каждое существующее вхождение
+                if (existingCount > 0) scores[role] *= (1.0f / (existingCount + 1.0f));
             }
 
             return scores.RandomElementByWeight(kvp => Mathf.Max(0.01f, kvp.Value)).Key;
@@ -353,15 +361,17 @@ namespace EconomicsDemography
             switch (f.def.techLevel)
             {
                 case TechLevel.Animal:
-                case TechLevel.Neolithic:   techMult = 0.5f; break;
-                case TechLevel.Medieval:    techMult = 1.0f; break;
-                case TechLevel.Industrial:  techMult = 2.5f; break;
-                case TechLevel.Spacer:      techMult = 3.0f; break;
-                case TechLevel.Ultra:       techMult = 3.5f; break;
-                case TechLevel.Archotech:   techMult = 4.0f; break;
+                case TechLevel.Neolithic:   techMult = 1.0f; break;
+                case TechLevel.Medieval:    techMult = 4.0f; break;
+                case TechLevel.Industrial:  techMult = 15.0f; break;
+                case TechLevel.Spacer:      techMult = 20.0f; break;
+                case TechLevel.Ultra:       techMult = 30.0f; break;
+                case TechLevel.Archotech:   techMult = 40.0f; break;
             }
 
-            float efficiencyScale = 1f + Mathf.Log10(Mathf.Max(1f, laborForce / 50f));
+            float economyOfScale = 1f + Mathf.Log10(Mathf.Max(1f, laborForce / 50f));
+            float complexityPenalty = Mathf.Clamp(1.0f - (laborForce / 30000.0f), 0.1f, 1.0f);
+            float efficiencyScale = economyOfScale * complexityPenalty;
             float techProdMult = 1f;
             var s = EconomicsDemographyMod.Settings;
             switch (f.def.techLevel)
@@ -375,37 +385,61 @@ namespace EconomicsDemography
                 case TechLevel.Archotech:   techProdMult = s.prodArchotech; break;
             }
 
-            float productionValue = laborForce * Rand.Range(0.30f, 0.50f) * techMult * efficiencyScale * techProdMult;
+            float inflationBonus = (this.currentInflation > 1.0f) ? this.currentInflation : 1.0f;
+            float baseProductionValue = laborForce * Rand.Range(0.60f, 1.00f) * techMult * efficiencyScale * techProdMult;
+            float marketProductionValue = baseProductionValue * inflationBonus;
                     
             float currentTotalWealth = stock.GetTotalWealth();
             float targetSilver = currentTotalWealth * 0.10f;
 
-            if (!EconomicsDemographyMod.Settings.enableGoldStandard)
+            string traitName = factionTraits.TryGetValue(f.loadID, out string tName) ? tName : "Generalist";
+            if (f.def.defName == "TradersGuild" || traitName == "Miner" || traitName == "Jeweler")
             {
-                if (stock.silver < targetSilver)
+                float silverEffort = 0f;
+                if (f.def.defName == "TradersGuild") silverEffort = 0.15f;
+                else if (traitName == "Miner") silverEffort = 0.10f;
+                else if (traitName == "Jeweler") silverEffort = 0.05f;
+                else silverEffort = 0f; // Все остальные производят ТОЛЬКО товары
+
+                float hillMult = 1.0f;
+                if (traitName == "Miner" || traitName == "Jeweler")
                 {
-                    float silverDeficit = targetSilver - stock.silver;
-                    float diversion = Mathf.Min(productionValue * 0.5f, silverDeficit);
-                    stock.silver += Mathf.RoundToInt(diversion);
-                    productionValue -= diversion;
+                    int hillsBonus = Find.WorldObjects.Settlements.Count(objs => objs.Faction == f && objs.Visitable && Find.WorldGrid[objs.Tile].hilliness >= Hilliness.LargeHills);
+                    hillMult = 1.0f + (hillsBonus * 0.2f);
                 }
-            }
-            
-            if (f.def.permanentEnemy) stock.silver -= Mathf.RoundToInt(stock.silver * 0.05f);
-            
-            List<ThingDef> potentialGoods = new List<ThingDef>();
-            void AddFromLevel(TechLevel level)
-            {
-                if (rawResourcesCache.ContainsKey(level)) potentialGoods.AddRange(rawResourcesCache[level]);
-                if (manufacturedCache.ContainsKey(level)) potentialGoods.AddRange(manufacturedCache[level]);
-                if (foodCache.ContainsKey(level)) potentialGoods.AddRange(foodCache[level]);
+
+                int producedSilver = Mathf.RoundToInt(baseProductionValue * silverEffort * hillMult);
+                stock.silver += producedSilver;
+                marketProductionValue -= producedSilver;
             }
 
-            for (TechLevel l = TechLevel.Neolithic; l <= f.def.techLevel; l++) AddFromLevel(l);
-            if (potentialGoods.Count < 5 && f.def.techLevel > TechLevel.Neolithic) AddFromLevel(f.def.techLevel - 1);
+            if (f.def.permanentEnemy) stock.silver -= Mathf.RoundToInt(stock.silver * 0.05f);
             
-            if (f.def.techLevel > TechLevel.Medieval && rawResourcesCache.ContainsKey(TechLevel.Neolithic))
-                potentialGoods.AddRange(rawResourcesCache[TechLevel.Neolithic]);
+            float remainingProductionValue = marketProductionValue;
+            List<ThingDef> potentialGoods = new List<ThingDef>();
+            TechLevel minRestrictiveLevel = (f.def.techLevel > TechLevel.Medieval) ? f.def.techLevel - 1 : TechLevel.Neolithic;
+
+            for (TechLevel l = TechLevel.Neolithic; l <= f.def.techLevel; l++)
+            {
+                if (rawResourcesCache.ContainsKey(l)) potentialGoods.AddRange(rawResourcesCache[l]);
+                if (foodCache.ContainsKey(l)) potentialGoods.AddRange(foodCache[l]);
+
+                if (manufacturedCache.ContainsKey(l))
+                {
+                    foreach (var d in manufacturedCache[l])
+                    {
+                        // Оружие, броня (Apparel) и Медицина — только свой уровень и один ниже
+                        if (d.IsWeapon || d.IsApparel || d.IsMedicine)
+                        {
+                            if (l >= minRestrictiveLevel) potentialGoods.Add(d);
+                        }
+                        else // Всё остальное (наркотики, книги и т.д.) — без ограничений по тех-уровню (до макс. уровня фракции)
+                        {
+                            potentialGoods.Add(d);
+                        }
+                    }
+                }
+            }
 
             if (potentialGoods.Count > 0)
             {
@@ -435,8 +469,8 @@ namespace EconomicsDemography
                 bool needRefresh = !monthlyProductionPlans.ContainsKey(fid) || Find.TickManager.TicksGame % 60000 == 0;
                 if (needRefresh)
                 {
-                    string trait = factionTraits.TryGetValue(fid, out string t) ? t : "Generalist";
-                    var weightedItems = potentialGoods.Select(d => new { Def = d, Weight = GetWeightForDef(d, trait) }).ToList();
+                    string trait1 = factionTraits.TryGetValue(fid, out string t1) ? t1 : "Generalist";
+                    var weightedItems = potentialGoods.Select(d => new { Def = d, Weight = GetWeightForDef(d, trait1) }).ToList();
                     var staples = weightedItems.Where(x => x.Weight >= 800f).InRandomOrder().Select(x => x.Def.defName).ToList();
                     var specialized = weightedItems.Where(x => x.Weight >= 200f && x.Weight < 800f).InRandomOrder().Select(x => x.Def.defName).ToList();
                     if (!specialized.Any() && !staples.Any()) specialized = weightedItems.InRandomOrder().Take(10).Select(x => x.Def.defName).ToList();
@@ -475,7 +509,6 @@ namespace EconomicsDemography
                         if (!added) break;
                     }
                     monthlyProductionPlans[fid] = mixedPlan;
-                    if (mixedPlan.Any()) Log.Message(string.Format((string)"ED_Log_ProductionPlanUpdated".Translate(), f.Name, trait, mixedPlan[0]));
                 }
 
                 int varietyLimit = Mathf.Clamp(Mathf.CeilToInt(adults / 10f), 6, 25);
@@ -491,7 +524,7 @@ namespace EconomicsDemography
                 }
 
                 var profitable = potentialGoods.Where(def => !activeLines.Contains(def) && !IsSaturatedLocal(def) && CanAddByLimit(def, activeLines))
-                    .OrderByDescending(def => def.BaseMarketValue * (globalPriceModifiers.TryGetValue(def, out float m) ? m : 1.0f))
+                    .OrderByDescending(def => def.BaseMarketValue * (globalPriceModifiers.TryGetValue(def, out float m1) ? m1 : 1.0f))
                     .Take(varietyLimit - activeLines.Count);
                 foreach (var p in profitable) activeLines.Add(p);
 
@@ -503,25 +536,67 @@ namespace EconomicsDemography
 
                 if (activeLines.Count > 0)
                 {
-                    float baseBudgetPerSlot = productionValue / activeLines.Count;
+                    float baseBudgetPerSlot = remainingProductionValue / activeLines.Count;
                     if (!productionProgress.ContainsKey(fid)) productionProgress[fid] = new FactionProductionProgress();
                     var myProgress = productionProgress[fid].progress; 
 
                     foreach (ThingDef good in activeLines)
                     {
-                        if (productionValue <= 0) break;
+                        if (remainingProductionValue <= 0) break;
                         float slotBudget = baseBudgetPerSlot * Rand.Range(0.8f, 1.2f);
-                        string trait = factionTraits.TryGetValue(fid, out string t) ? t : "Generalist";
-                        if (GetWeightForDef(good, trait) >= 1000f) slotBudget *= 2.0f;
+                        string trait2 = factionTraits.TryGetValue(fid, out string t2) ? t2 : "Generalist";
+                        if (GetWeightForDef(good, trait2) >= 1000f) slotBudget *= 2.0f;
 
-                        float actualMarketPrice = Mathf.Max(good.BaseMarketValue * (globalPriceModifiers.TryGetValue(good, out float m) ? m : 1.0f), 0.1f);
+                        float globalModifier = globalPriceModifiers.TryGetValue(good, out float gm) ? gm : 1.0f;
+                        float actualMarketPrice = Mathf.Max(good.BaseMarketValue * globalModifier, 0.1f);
+                        
+                        if (globalModifier > 1.1f) slotBudget *= globalModifier;
+                        else if (globalModifier < 0.9f) slotBudget *= globalModifier;
+
+                        float totalInvItems = stock.inventory.Values.Sum();
+                        if (totalInvItems > 50) 
+                        {
+                            string myCat = "Other";
+                            if (good.IsIngestible) myCat = "Food";
+                            else if (good.IsWeapon) myCat = "Weapon";
+                            else if (good.IsApparel) myCat = "Apparel";
+                            else if (good.IsMedicine) myCat = "Medicine";
+
+                            int catTotal = 0;
+                            foreach (var kvp in stock.inventory)
+                            {
+                                string dName; int q;
+                                VirtualStockpile.ParseKey(kvp.Key, out dName, out q);
+                                ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(dName);
+                                if (d == null) continue;
+                                
+                                string dCat = "Other";
+                                if (d.IsIngestible) dCat = "Food";
+                                else if (d.IsWeapon) dCat = "Weapon";
+                                else if (d.IsApparel) dCat = "Apparel";
+                                else if (d.IsMedicine) dCat = "Medicine";
+                                if (dCat == myCat) catTotal += kvp.Value;
+                            }
+
+                            float catRatio = (float)catTotal / totalInvItems;
+                            if (globalModifier <= 1.2f)
+                            {
+                                if (catRatio >= 0.50f) slotBudget /= 10.0f;
+                                else if (catRatio >= 0.40f) slotBudget /= 3.0f;
+                                else if (catRatio >= 0.30f) slotBudget /= 2.0f;
+                                else if (catRatio >= 0.15f) slotBudget /= 1.2f;
+                            }
+                        }
+                        
                         if (!myProgress.ContainsKey(good.defName)) myProgress[good.defName] = 0f;
                         myProgress[good.defName] += slotBudget;
 
                         if (myProgress[good.defName] >= actualMarketPrice)
                         {
                             int countToMake = Mathf.FloorToInt(myProgress[good.defName] / actualMarketPrice);
-                            int roomLeft = Mathf.RoundToInt(totalLiving * 3.0f) - stock.GetCount(good);
+                            float storageLimitMult = Mathf.Clamp(globalModifier, 1.0f, 10.0f);
+                            int roomLeft = Mathf.RoundToInt(totalLiving * 3.0f * storageLimitMult) - stock.GetCount(good);
+                            
                             if (roomLeft > 0)
                             {
                                 int finalCount = Mathf.Min(countToMake, roomLeft);
@@ -529,17 +604,12 @@ namespace EconomicsDemography
                                 if (good.HasComp(typeof(CompQuality))) q = (int)stock.GenerateRandomQuality(good);
                                 stock.AddItem(good, finalCount, q);
                                 myProgress[good.defName] -= (finalCount * actualMarketPrice);
-                                productionValue -= (finalCount * actualMarketPrice);
+                                remainingProductionValue -= (finalCount * actualMarketPrice);
                             }
                         }
-                        else productionValue -= slotBudget;
+                        else remainingProductionValue -= slotBudget;
                     }
                 }
-            }
-            
-            if (!EconomicsDemographyMod.Settings.enableGoldStandard)
-            {
-                stock.silver += Mathf.RoundToInt(laborForce * 0.04f * techMult);
             }
         }
     }

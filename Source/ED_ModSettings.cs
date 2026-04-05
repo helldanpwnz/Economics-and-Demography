@@ -52,6 +52,7 @@ namespace EconomicsDemography
         public float priceUpdateFactor = 0.2f;
         public float inflationUpdateFactor = 0.2f;
         public float collapseThresholdFactor = 0.5f;
+        public float inflationLogScale = 0.5f;
 
         public override void ExposeData()
         {
@@ -100,6 +101,7 @@ namespace EconomicsDemography
             Scribe_Values.Look(ref priceUpdateFactor, "priceUpdateFactor", 0.2f);
             Scribe_Values.Look(ref inflationUpdateFactor, "inflationUpdateFactor", 0.2f);
             Scribe_Values.Look(ref collapseThresholdFactor, "collapseThresholdFactor", 0.5f);
+            Scribe_Values.Look(ref inflationLogScale, "inflationLogScale", 0.5f);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -149,6 +151,7 @@ namespace EconomicsDemography
             priceUpdateFactor = 0.2f;
             inflationUpdateFactor = 0.2f;
             collapseThresholdFactor = 0.5f;
+            inflationLogScale = 0.5f;
             enableGlobalInflation = true;
             enableGoldStandard = false;
             homeostasisEfficiency = 0.001f;
@@ -193,6 +196,9 @@ namespace EconomicsDemography
             
             listing.Label("ED_InflationUpdateFactor".Translate((inflationUpdateFactor * 100f).ToString("F0")));
             inflationUpdateFactor = listing.Slider(inflationUpdateFactor, 0.01f, 1.0f);
+
+            listing.Label("ED_Setting_InflationLogScale".Translate(inflationLogScale.ToString("F2")));
+            inflationLogScale = listing.Slider(inflationLogScale, 0.1f, 1.0f);
 
             if (EconomicsDemographyMod.Settings.enableLogs) // Tooltip-like label
                 listing.Label("  <color=gray>" + "ED_InflationUpdateFactorDesc".Translate() + "</color>", 12f);

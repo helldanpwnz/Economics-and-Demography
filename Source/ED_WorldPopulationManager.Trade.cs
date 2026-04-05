@@ -21,28 +21,24 @@ namespace EconomicsDemography
             foreach (var actor in factions)
             {
                 if (actor.IsPlayer || actor.defeated || actor.def.hidden || (actor.leader == null && actor.def.techLevel > TechLevel.Animal)) continue;
-                if (Rand.Value > actionChance) continue;
 
                 VirtualStockpile actorStock = GetStockpile(actor);
+                float silverRatio = actorStock.silver / Mathf.Max(1f, actorStock.GetTotalWealth());
+                bool needsMoney = silverRatio < 0.30f; // Приоритетная задача до достижения 30% капитала в серебре
+
+                // Если денег меньше 30% — торгуем принудительно (игнорируя 2%), иначе — по шансу
+                if (!needsMoney && Rand.Value > actionChance) continue;
 
                 if (actor.def.permanentEnemy)
                 {
-                    var victims = factions.Where(v => 
-                        v != actor && !v.IsPlayer && !v.defeated && !v.def.hidden &&
-                        !v.def.permanentEnemy && 
-                        v.def.techLevel > TechLevel.Neolithic 
-                    ).ToList();
-
+                    // (Рейды - без изменений)
+                    var victims = factions.Where(v => v != actor && !v.IsPlayer && !v.defeated && !v.def.hidden && !v.def.permanentEnemy && v.def.techLevel > TechLevel.Neolithic).ToList();
                     if (victims.Count == 0) continue;
-
                     Faction victim = victims.RandomElement();
                     VirtualStockpile victimStock = GetStockpile(victim);
-
                     if (victimStock.inventory.Count == 0) continue;
-
                     float stealPercent = 0f;
-                    switch (victim.def.techLevel)
-                    {
+                    switch (victim.def.techLevel) {
                         case TechLevel.Medieval:   stealPercent = 0.05f; break; 
                         case TechLevel.Industrial: stealPercent = 0.03f; break; 
                         case TechLevel.Spacer:     stealPercent = 0.02f; break; 
@@ -50,20 +46,15 @@ namespace EconomicsDemography
                         case TechLevel.Archotech:  stealPercent = 0.01f; break; 
                         default: continue; 
                     }
-
                     string targetKey = GetRandomValidItemKey(victimStock);
                     if (targetKey == null) continue;
-
                     int totalVictimHas = victimStock.inventory[targetKey];
                     int amountToSteal = Mathf.Clamp(Mathf.CeilToInt(totalVictimHas * stealPercent), 1, totalVictimHas);
-                    
                     VirtualStockpile.ParseKey(targetKey, out string defName, out int q1);
                     ThingDef itemDef = DefDatabase<ThingDef>.GetNamedSilentFail(defName);
-                    if (itemDef != null)
-                    {
+                    if (itemDef != null) {
                         victimStock.inventory[targetKey] -= amountToSteal;
                         if (victimStock.inventory[targetKey] <= 0) victimStock.inventory.Remove(targetKey);
-
                         actorStock.AddItem(itemDef, amountToSteal, q1);
                         Log.Message("ED_Log_Raid".Translate(actor.Name, amountToSteal, itemDef.label, victim.Name));
                     }
@@ -76,11 +67,9 @@ namespace EconomicsDemography
 
                     if (partners.Count == 0) continue;
 
-                    Faction partner = partners.RandomElement();
+                    // Если денег не хватает, целенаправленно ищем богатых партнеров
+                    Faction partner = needsMoney ? partners.RandomElementByWeight(p => Mathf.Max(1f, GetStockpile(p).silver)) : partners.RandomElement();
                     VirtualStockpile partnerStock = GetStockpile(partner);
-
-                    float silverRatio = actorStock.silver / Mathf.Max(1f, actorStock.GetTotalWealth());
-                    bool needsMoney = silverRatio < 0.10f;
 
                     string keyA = actorStock.inventory
                         .Where(kvp => kvp.Value > 0 && kvp.Key != "Silver")
@@ -92,7 +81,7 @@ namespace EconomicsDemography
                             float priority = kvp.Value * (2.0f - m);
                             
                             if (needsMoney) {
-                                priority *= d.BaseMarketValue / 10f; 
+                                priority *= d.BaseMarketValue / 5f; 
                             }
                             return priority;
                         })
@@ -114,7 +103,8 @@ namespace EconomicsDemography
                     float buyPrice = partner.def.permanentEnemy ? (baseValue * 2.0f) : baseValue;
                     float finalUnitPrice = (sellPrice + buyPrice) / 2f;
 
-                    int amountA = Mathf.Max(1, Mathf.CeilToInt(actorStock.inventory[keyA] * Rand.Range(0.1f, 0.3f)));
+                    float sellRange = Rand.Range(0.1f, 0.3f);
+                    int amountA = Mathf.Max(1, Mathf.CeilToInt(actorStock.inventory[keyA] * sellRange));
                     float totalDealValue = amountA * finalUnitPrice;
 
                     bool actorIsLower = actor.def.techLevel < partner.def.techLevel;
@@ -135,7 +125,7 @@ namespace EconomicsDemography
                         
                         Log.Message("ED_Log_Export".Translate(actor.Name, actor.def.techLevel.ToString(), partner.Name, totalDealValue.ToString("F0")));
                     }
-                    else if (!actorIsLower) // Денег нет. Если это сделка "между своими", они переходят на бартер
+                    else if (!actorIsLower && !needsMoney) // БАРТЕР ЗАПРЕЩЕН, ПРИ НЕХВАТКЕ СЕРЕБРА (нужно накопление)
                     {
                         if (IsSaturated(defA, partnerStock, GetTotalLiving(partner)) && !actor.def.permanentEnemy) continue;
 
