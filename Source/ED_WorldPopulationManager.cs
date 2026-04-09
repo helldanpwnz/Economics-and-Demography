@@ -204,6 +204,10 @@ namespace EconomicsDemography
             if (raidLogs == null) raidLogs = new Dictionary<int, List<TradingLogEntry>>();
             if (stealLogs == null) stealLogs = new Dictionary<int, List<TradingLogEntry>>();
             if (consumeLogs == null) consumeLogs = new Dictionary<int, List<TradingLogEntry>>();
+            if (globalPriceModifiers == null) globalPriceModifiers = new Dictionary<ThingDef, float>();
+            if (rawResourcesCache == null) rawResourcesCache = new Dictionary<TechLevel, List<ThingDef>>();
+            if (manufacturedCache == null) manufacturedCache = new Dictionary<TechLevel, List<ThingDef>>();
+            if (foodCache == null) foodCache = new Dictionary<TechLevel, List<ThingDef>>();
         }
 
         public bool IsInitialized(Faction f)

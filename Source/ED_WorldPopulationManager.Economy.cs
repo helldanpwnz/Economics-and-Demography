@@ -21,18 +21,26 @@ public override void WorldComponentTick()
     // Сработает ровно 1 раз при первом снятии с паузы
     if (!initializedSession)
     {
-        isCacheInitialized = false; 
-        rawResourcesCache.Clear();
-        manufacturedCache.Clear();
-        foodCache.Clear();
-        
-        // Вместо полного дневного цикла (RunDailyTasks), который случайно менял капитал при каждой загрузке сейва,
-        // мы только разово обновляем кэши цен и активов игрока, чтобы интерфейс загрузился корректно.
-        RecalculateGlobalPrices();
-        UpdatePlayerAssetsCache();
-        
-        initializedSession = true;
-        Log.Message("ED_Log_EconomyInit".Translate());
+        try 
+        {
+            isCacheInitialized = false; 
+            if (rawResourcesCache != null) rawResourcesCache.Clear();
+            if (manufacturedCache != null) manufacturedCache.Clear();
+            if (foodCache != null) foodCache.Clear();
+            
+            RecalculateGlobalPrices();
+            UpdatePlayerAssetsCache();
+            
+            Log.Message("ED_Log_EconomyInit".Translate());
+        }
+        catch (Exception ex)
+        {
+            Log.Error("ED_Log_EconomyInitError".Translate() + ": " + ex.ToString());
+        }
+        finally
+        {
+            initializedSession = true; // Обязательно выходим из цикла даже при ошибках, чтобы не убить TPS
+        }
     }
 
     int currentTick = Find.TickManager.TicksGame;
@@ -77,7 +85,6 @@ public override void WorldComponentTick()
                 else if (f.IsPlayer)
                 {
                     foreach (var map in Find.Maps) totalWorldPop += map.mapPawns.FreeColonistsCount;
-                    foreach (var car in Find.WorldObjects.Caravans.Where(c => c.IsPlayerControlled)) totalWorldPop += car.pawns.InnerListForReading.Count(p => p.IsFreeColonist);
                 }
             }
             if (totalWorldPop <= 0) totalWorldPop = 100f; // Дефолт
@@ -300,9 +307,12 @@ public override void WorldComponentTick()
             float activeFactionNum = (float)Mathf.Max(1, activeFactionCountInt);
 
             HashSet<ThingDef> allTradeableItems = new HashSet<ThingDef>();
-            foreach (var list in rawResourcesCache.Values) if (list != null) allTradeableItems.UnionWith(list);
-            foreach (var list in manufacturedCache.Values) if (list != null) allTradeableItems.UnionWith(list);
-            foreach (var list in foodCache.Values) if (list != null) allTradeableItems.UnionWith(list);
+            if (rawResourcesCache != null)
+                foreach (var list in rawResourcesCache.Values) if (list != null) allTradeableItems.UnionWith(list);
+            if (manufacturedCache != null)
+                foreach (var list in manufacturedCache.Values) if (list != null) allTradeableItems.UnionWith(list);
+            if (foodCache != null)
+                foreach (var list in foodCache.Values) if (list != null) allTradeableItems.UnionWith(list);
 
             // 2. Предварительный расчет "Мировой емкости" (Общий вес всех хотелок)
             Dictionary<ThingDef, float> rawWeights = new Dictionary<ThingDef, float>();
@@ -360,6 +370,7 @@ public override void WorldComponentTick()
 
             foreach (ThingDef def in allTradeableItems)
             {
+                if (def == null) continue;
                 if (!rawWeights.TryGetValue(def, out float weight)) continue;
 
                 float priceBase = Mathf.Max(1.0f, def.BaseMarketValue);
@@ -382,7 +393,9 @@ public override void WorldComponentTick()
                 targetPriceMult *= Rand.Range(0.97f, 1.03f);
                 targetPriceMult = Mathf.Clamp(targetPriceMult, 0.15f, 10.0f);
 
-                float oldMult = this.globalPriceModifiers.TryGetValue(def, out float old) ? old : 1.0f;
+                float oldMult = 1.0f;
+                if (this.globalPriceModifiers != null)
+                    oldMult = this.globalPriceModifiers.TryGetValue(def, out float old) ? old : 1.0f;
                 float finalSmoothedMult = Mathf.Lerp(oldMult, targetPriceMult, EconomicsDemographyMod.Settings.priceUpdateFactor);
                 
                 if (Mathf.Abs(finalSmoothedMult - 1.0f) < 0.005f) finalSmoothedMult = 1.0f;
@@ -412,22 +425,7 @@ public override void WorldComponentTick()
                 }
             }
 
-            var caravans = Find.WorldObjects.Caravans;
-            for (int i = 0; i < caravans.Count; i++)
-            {
-                var car = caravans[i];
-                if (car.IsPlayerControlled)
-                {
-                    foreach (Thing t in car.AllThings)
-                    {
-                        if (t != null && t.def.category == ThingCategory.Item && !t.def.Minifiable)
-                        {
-                            string name = t.def.defName;
-                            cachedPlayerAssets[name] = (cachedPlayerAssets.TryGetValue(name, out int v) ? v : 0) + t.stackCount;
-                        }
-                    }
-                }
-            }
+
         }
 
         private Dictionary<string, int> GetPlayerAssets()
@@ -443,6 +441,7 @@ public override void WorldComponentTick()
             // 1. Серебро фракций
             foreach (var kvp in factionStockpiles)
             {
+                if (kvp.Value == null) continue;
                 Faction f = Find.FactionManager.AllFactionsListForReading.FirstOrDefault(x => x.loadID == kvp.Key);
                 if (!IsSimulatedFaction(f)) continue;
                 total += kvp.Value.silver;
@@ -451,17 +450,10 @@ public override void WorldComponentTick()
             // 2. Серебро игрока на картах
             foreach (var map in Find.Maps)
             {
-                if (map != null) total += map.resourceCounter.Silver;
+                if (map != null && map.resourceCounter != null) total += map.resourceCounter.Silver;
             }
 
-            // 3. Серебро в караванах
-            foreach (var caravan in Find.WorldObjects.AllWorldObjects.OfType<Caravan>())
-            {
-                if (caravan != null && caravan.IsPlayerControlled)
-                {
-                    total += caravan.Goods.Where(t => t.def == ThingDefOf.Silver).Sum(t => (float)t.stackCount);
-                }
-            }
+
 
             return total;
         }
@@ -478,7 +470,6 @@ public override void WorldComponentTick()
                 else if (f.IsPlayer)
                 {
                     foreach (var map in Find.Maps) total += map.mapPawns.FreeColonistsCount;
-                    foreach (var car in Find.WorldObjects.Caravans.Where(c => c.IsPlayerControlled)) total += car.pawns.InnerListForReading.Count(p => p.IsFreeColonist);
                 }
             }
             return total;
@@ -491,17 +482,13 @@ public override void WorldComponentTick()
             {
                 if (IsSimulatedFaction(f))
                 {
-                    total += GetStockpile(f).GetTotalWealth();
+                    var stock = GetStockpile(f);
+                    if (stock != null) total += stock.GetTotalWealth();
                 }
                 else if (f.IsPlayer)
                 {
-                    foreach (var map in Find.Maps) total += map.wealthWatcher.WealthTotal;
-                    foreach (var car in Find.WorldObjects.Caravans.Where(c => c.IsPlayerControlled))
-                    {
-                        foreach (var t in car.AllThings)
-                        {
-                            total += t.MarketValue * t.stackCount;
-                        }
+                    foreach (var map in Find.Maps) {
+                        if (map != null && map.wealthWatcher != null) total += map.wealthWatcher.WealthTotal;
                     }
                 }
             }

@@ -176,6 +176,7 @@
   <ED_TradingHistory_Desc>Просмотреть историю производства и торговли этой фракции за последние 30 циклов.</ED_TradingHistory_Desc>
   <ED_TradingHistory_Title>История экономики: {0}</ED_TradingHistory_Title>
   <ED_History_Consumption>Потребление</ED_History_Consumption>
+  <ED_Log_EconomyInitError>Ошибка инициализации экономики</ED_Log_EconomyInitError>
   <ED_History_Production>Производство</ED_History_Production>
   <ED_History_Sales>Продажи</ED_History_Sales>
   <ED_History_Purchases>Покупки</ED_History_Purchases>

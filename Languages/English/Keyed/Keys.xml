@@ -176,6 +176,7 @@
   <ED_TradingHistory_Desc>View production and trade history of this faction for the last 30 cycles.</ED_TradingHistory_Desc>
   <ED_TradingHistory_Title>Economy History: {0}</ED_TradingHistory_Title>
   <ED_History_Consumption>Consumption</ED_History_Consumption>
+  <ED_Log_EconomyInitError>Economy initialization error</ED_Log_EconomyInitError>
   <ED_History_Production>Production</ED_History_Production>
   <ED_History_Sales>Sales</ED_History_Sales>
   <ED_History_Purchases>Purchases</ED_History_Purchases>
