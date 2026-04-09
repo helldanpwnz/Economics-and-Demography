@@ -72,7 +72,8 @@ namespace EconomicsDemography
             }
 
             var stock = manager.GetStockpile(parms.faction);
-            List<Thing> newThings = stock.GenerateRealThings(trader.TraderKind, false);
+            float carrierCapacity = carriers.Sum(p => MassUtility.Capacity(p));
+            List<Thing> newThings = stock.GenerateRealThings(trader.TraderKind, false, carrierCapacity);
 
             // РАЗДАЧА: Серебро и Товары - Вьючным
             var packAnimalsOnly = carriers.Where(x => x.RaceProps.packAnimal).ToList();

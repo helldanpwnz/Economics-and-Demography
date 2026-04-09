@@ -119,7 +119,8 @@ namespace EconomicsDemography
                         }
                     }
 
-                    List<Thing> newThings = virtStock.GenerateRealThings(newTrader.TraderKind, false);
+                    float carrierCapacity = carriers.Sum(p => MassUtility.Capacity(p));
+                    List<Thing> newThings = virtStock.GenerateRealThings(newTrader.TraderKind, false, carrierCapacity);
                     int carrierIndex = 0;
                     
                     var packAnimalsOnly = carriers.Where(x => x.RaceProps.packAnimal).ToList();

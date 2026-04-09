@@ -65,8 +65,18 @@ namespace EconomicsDemography
                     int quality = -1;
                     if (t.TryGetComp<CompQuality>() is CompQuality qComp) quality = (int)qComp.Quality;
                     stock.AddItem(t.def, t.stackCount, quality);
+                    
+                    // Логируем восстановление предметов
+                    float itemVal = t.def.BaseMarketValue * VirtualStockpile.GetQualityMultiplier(quality) * t.stackCount;
+                    TradingHistoryManager.AddLog(manager.raidLogs, f.loadID, new TradingLogEntry(Find.TickManager.TicksGame, t.def.LabelCap, t.stackCount, itemVal));
+                    
                     recoveredCount++;
                 }
+            }
+
+            if (silverRecovered > 0)
+            {
+                TradingHistoryManager.AddLog(manager.raidLogs, f.loadID, new TradingLogEntry(Find.TickManager.TicksGame, "Silver", silverRecovered, silverRecovered));
             }
 
             // Считаем стоимость всего, что собрали

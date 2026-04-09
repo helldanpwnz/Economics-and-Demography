@@ -48,6 +48,14 @@ namespace EconomicsDemography
                         {
                             // Всё снаряжение уходит на погашение долга
                             manager.factionRaidDebt[fid] = debt - gearValue;
+                            
+                            // Логируем как конфискацию/возврат для долга
+                            foreach (var t in gear)
+                            {
+                                int q = t.TryGetComp<CompQuality>() != null ? (int)t.TryGetComp<CompQuality>().Quality : 2;
+                                float val = t.def.BaseMarketValue * VirtualStockpile.GetQualityMultiplier(q) * t.stackCount;
+                                TradingHistoryManager.AddLog(manager.raidLogs, fid, new TradingLogEntry(Find.TickManager.TicksGame, t.def.LabelCap, t.stackCount, val));
+                            }
                         }
                         else
                         {
@@ -56,6 +64,14 @@ namespace EconomicsDemography
                             float surplus = gearValue - debt;
                             var stock = manager.GetStockpile(__instance.Faction);
                             stock.silver += UnityEngine.Mathf.RoundToInt(surplus);
+
+                            // Логируем возврат (всей суммы для прозрачности)
+                            foreach (var t in gear)
+                            {
+                                int q = t.TryGetComp<CompQuality>() != null ? (int)t.TryGetComp<CompQuality>().Quality : 2;
+                                float val = t.def.BaseMarketValue * VirtualStockpile.GetQualityMultiplier(q) * t.stackCount;
+                                TradingHistoryManager.AddLog(manager.raidLogs, fid, new TradingLogEntry(Find.TickManager.TicksGame, t.def.LabelCap, t.stackCount, val));
+                            }
                         }
                     }
                     else
@@ -66,6 +82,9 @@ namespace EconomicsDemography
                             var inner = (x is MinifiedThing m) ? m.InnerThing : x;
                             int q = inner.TryGetComp<CompQuality>() != null ? (int)inner.TryGetComp<CompQuality>().Quality : 2;
                             gearValue += inner.def.BaseMarketValue * VirtualStockpile.GetQualityMultiplier(q) * x.stackCount;
+
+                            // Логируем каждый предмет
+                            TradingHistoryManager.AddLog(manager.raidLogs, fid, new TradingLogEntry(Find.TickManager.TicksGame, x.def.LabelCap, x.stackCount, inner.def.BaseMarketValue * VirtualStockpile.GetQualityMultiplier(q) * x.stackCount));
                         }
 
                         Log.Warning($"[ED-DEBUG-GEAR] ExitMap ВОЗВРАТ: {__instance.LabelShort} ({__instance.Faction.Name}) возвращает {gearValue:F0} на склад. Карта: {__instance.Map?.Parent?.GetType().Name}");

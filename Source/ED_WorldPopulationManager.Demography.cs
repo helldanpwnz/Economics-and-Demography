@@ -17,8 +17,22 @@ namespace EconomicsDemography
         private void ProcessDailyGrowth()
         {
             List<Faction> factions = Find.FactionManager.AllFactionsListForReading;
-            Faction luckySettled = factions.Where(f => IsSimulatedFaction(f) && (Find.WorldObjects.Settlements.Count(s => s.Faction == f) + (orbitalBases.TryGetValue(f.loadID, out int sb) ? sb : 0)) > 0).RandomElementWithFallback();
-            Faction luckyNomad = factions.Where(f => IsSimulatedFaction(f) && (Find.WorldObjects.Settlements.Count(s => s.Faction == f) + (orbitalBases.TryGetValue(f.loadID, out int sb) ? sb : 0)) == 0).RandomElementWithFallback();
+            
+            // Оптимизация: Считаем поселения один раз на весь цикл
+            Dictionary<int, int> groundBasesCount = new Dictionary<int, int>();
+            Dictionary<int, List<Settlement>> factionSettlements = new Dictionary<int, List<Settlement>>();
+            foreach (var s in Find.WorldObjects.Settlements)
+            {
+                if (s.Faction == null) continue;
+                int fid = s.Faction.loadID;
+                groundBasesCount[fid] = (groundBasesCount.TryGetValue(fid, out int c) ? c : 0) + 1;
+                
+                if (!factionSettlements.ContainsKey(fid)) factionSettlements[fid] = new List<Settlement>();
+                factionSettlements[fid].Add(s);
+            }
+
+            Faction luckySettled = factions.Where(f => IsSimulatedFaction(f) && ((groundBasesCount.TryGetValue(f.loadID, out int gbc) ? gbc : 0) + (orbitalBases.TryGetValue(f.loadID, out int sb) ? sb : 0)) > 0).RandomElementWithFallback();
+            Faction luckyNomad = factions.Where(f => IsSimulatedFaction(f) && ((groundBasesCount.TryGetValue(f.loadID, out int gbc) ? gbc : 0) + (orbitalBases.TryGetValue(f.loadID, out int sb) ? sb : 0)) == 0).RandomElementWithFallback();
             
             if (luckySettled != null && EconomicsDemographyMod.Settings.enableNotifications) Log.Message("[ED] Daily Lucky Settled: " + luckySettled.Name);
             if (luckyNomad != null && EconomicsDemographyMod.Settings.enableNotifications) Log.Message("[ED] Daily Lucky Nomad: " + luckyNomad.Name);
@@ -127,7 +141,7 @@ namespace EconomicsDemography
 
                 if (totalLiving <= 0) continue;
 
-                int groundBases = Find.WorldObjects.Settlements.Count(s => s.Faction == f);
+                int groundBases = groundBasesCount.TryGetValue(fid, out int gb) ? gb : 0;
                 int spaceBasesCount = orbitalBases.TryGetValue(fid, out int sb) ? sb : 0;
                 int totalBases = groundBases + spaceBasesCount;
                 
@@ -294,9 +308,11 @@ namespace EconomicsDemography
 
                     if (f == luckySettled && shouldCollapse && Rand.Value < 0.2f)
                     {
-                        Settlement settlementToCollapse = Find.WorldObjects.Settlements
-                            .Where(s => s.Faction == f)
-                            .RandomElementWithFallback();
+                        Settlement settlementToCollapse = null;
+                        if (factionSettlements.TryGetValue(fid, out var bases) && bases.Count > 0)
+                        {
+                            settlementToCollapse = bases.RandomElementWithFallback();
+                        }
 
                         if (settlementToCollapse != null)
                         {
@@ -583,7 +599,7 @@ namespace EconomicsDemography
                             if (f == luckySettled && Rand.Value < expansionChance) 
                             {
                                 int newTile = -1;
-                                var currentBases = Find.WorldObjects.Settlements.Where(s => s.Faction == f).ToList();
+                                var currentBases = factionSettlements.TryGetValue(fid, out var cbases) ? cbases : new List<Settlement>();
 
                                 if (currentBases.Any())
                                 {

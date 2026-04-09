@@ -18,6 +18,12 @@ namespace EconomicsDemography
         private Vector2 scrollPosition = Vector2.zero;
         private float lastHeight = 0f;
 
+        // Кэш для ускорения отрисовки интерфейса (обновляем раз в секунду)
+        private float cachedTotalPop = 0f;
+        private float cachedTotalWealth = 0f;
+        private float cachedTotalSilver = 0f;
+        private int lastCacheTick = -1;
+
         public override Vector2 InitialSize => new Vector2(1400f, 820f);
 
         public override void DoWindowContents(Rect inRect)
@@ -32,13 +38,18 @@ namespace EconomicsDemography
             Text.Font = GameFont.Medium;
             // Глобальные показатели сверху (без общего заголовка)
             float topY = 0f;
-            float totalPop = manager.CalculateTotalWorldPopulation();
-            float totalWealth = manager.CalculateTotalWorldWealth();
-            float totalSilver = manager.CalculateTotalWorldSilver();
+            
+            if (lastCacheTick < 0 || Find.TickManager.TicksGame > lastCacheTick + 60)
+            {
+                cachedTotalPop = manager.CalculateTotalWorldPopulation();
+                cachedTotalWealth = manager.CalculateTotalWorldWealth();
+                cachedTotalSilver = manager.CalculateTotalWorldSilver();
+                lastCacheTick = Find.TickManager.TicksGame;
+            }
 
-            Widgets.Label(new Rect(0f, topY, 350f, 40f), "ED_UI_GlobalResidents".Translate($"<color=#ffee00>{totalPop:N0}</color>"));
-            Widgets.Label(new Rect(350f, topY, 350f, 40f), "ED_UI_GlobalCapital".Translate($"<color=#00ff00>{totalWealth:N0}</color>"));
-            Widgets.Label(new Rect(700f, topY, 350f, 40f), "ED_UI_GlobalSilver".Translate($"<color=#77ffff>{totalSilver:N0}</color>"));
+            Widgets.Label(new Rect(0f, topY, 350f, 40f), "ED_UI_GlobalResidents".Translate($"<color=#ffee00>{cachedTotalPop:N0}</color>"));
+            Widgets.Label(new Rect(350f, topY, 350f, 40f), "ED_UI_GlobalCapital".Translate($"<color=#00ff00>{cachedTotalWealth:N0}</color>"));
+            Widgets.Label(new Rect(700f, topY, 350f, 40f), "ED_UI_GlobalSilver".Translate($"<color=#77ffff>{cachedTotalSilver:N0}</color>"));
 
             if (EconomicsDemographyMod.Settings.enableGlobalInflation)
             {
@@ -121,6 +132,14 @@ namespace EconomicsDemography
             string traitText = "ED_UI_TraitLabel".Translate(TranslateTrait(trait));
             Widgets.Label(techRect, $"{techText} | {traitText}");
             GUI.color = Color.white;
+
+            // Кнопка истории (История торговли и производства)
+            Rect historyBtnRect = new Rect(nameRect.xMax - 30f, midY - 45f, 28f, 28f);
+            if (Widgets.ButtonImage(historyBtnRect, ContentFinder<Texture2D>.Get("Icons/UI/ED_Trading_history", false)))
+            {
+                Find.WindowStack.Add(new ED_Window_TradingHistory(f));
+            }
+            TooltipHandler.TipRegion(historyBtnRect, "ED_TradingHistory_Button".Translate());
 
             // 2. Статистика населения
             int adults = manager.GetPopulation(f);

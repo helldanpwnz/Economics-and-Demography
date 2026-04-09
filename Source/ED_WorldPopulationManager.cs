@@ -23,6 +23,15 @@ namespace EconomicsDemography
         public Dictionary<int, VirtualStockpile> factionStockpiles = new Dictionary<int, VirtualStockpile>();
         public Dictionary<int, int> lastRestockTick = new Dictionary<int, int>();
         public Dictionary<int, int> lastBaseCount = new Dictionary<int, int>();
+        
+        // История торговли (новое)
+        public Dictionary<int, List<TradingLogEntry>> prodLogs = new Dictionary<int, List<TradingLogEntry>>();
+        public Dictionary<int, List<TradingLogEntry>> saleLogs = new Dictionary<int, List<TradingLogEntry>>();
+        public Dictionary<int, List<TradingLogEntry>> buyLogs = new Dictionary<int, List<TradingLogEntry>>();
+        public Dictionary<int, List<TradingLogEntry>> raidLogs = new Dictionary<int, List<TradingLogEntry>>();
+        public Dictionary<int, List<TradingLogEntry>> stealLogs = new Dictionary<int, List<TradingLogEntry>>();
+        public Dictionary<int, List<TradingLogEntry>> consumeLogs = new Dictionary<int, List<TradingLogEntry>>();
+
         public Dictionary<ThingDef, float> globalPriceModifiers = new Dictionary<ThingDef, float>();
         public Dictionary<int, List<string>> monthlyProductionPlans = new Dictionary<int, List<string>>();
         public float FactionWealth = 0f;
@@ -99,6 +108,15 @@ namespace EconomicsDemography
             Scribe_Values.Look(ref initialWorldPop, "initialWorldPop", -1f);
             Scribe_Collections.Look(ref factionRaidDebt, "factionRaidDebt", LookMode.Value, LookMode.Value);
             Scribe_Collections.Look(ref processedSettlements, "processedSettlements", LookMode.Value);
+            Scribe_Collections.Look(ref globalPriceModifiers, "globalPriceModifiers", LookMode.Def, LookMode.Value);
+            
+            // Сохранение истории (новое)
+            Scribe_Collections.Look(ref prodLogs, "prodLogs", LookMode.Value, LookMode.Deep);
+            Scribe_Collections.Look(ref saleLogs, "saleLogs", LookMode.Value, LookMode.Deep);
+            Scribe_Collections.Look(ref buyLogs, "buyLogs", LookMode.Value, LookMode.Deep);
+            Scribe_Collections.Look(ref raidLogs, "raidLogs", LookMode.Value, LookMode.Deep);
+            Scribe_Collections.Look(ref stealLogs, "stealLogs", LookMode.Value, LookMode.Deep);
+            Scribe_Collections.Look(ref consumeLogs, "consumeLogs", LookMode.Value, LookMode.Deep);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit && processedSettlements == null)
                 processedSettlements = new HashSet<int>();
@@ -179,6 +197,13 @@ namespace EconomicsDemography
             if (agingBuffer == null) agingBuffer = new Dictionary<int, float>();
             if (factionStockpiles == null) factionStockpiles = new Dictionary<int, VirtualStockpile>();
             if (factionRaidDebt == null) factionRaidDebt = new Dictionary<int, float>();
+
+            if (prodLogs == null) prodLogs = new Dictionary<int, List<TradingLogEntry>>();
+            if (saleLogs == null) saleLogs = new Dictionary<int, List<TradingLogEntry>>();
+            if (buyLogs == null) buyLogs = new Dictionary<int, List<TradingLogEntry>>();
+            if (raidLogs == null) raidLogs = new Dictionary<int, List<TradingLogEntry>>();
+            if (stealLogs == null) stealLogs = new Dictionary<int, List<TradingLogEntry>>();
+            if (consumeLogs == null) consumeLogs = new Dictionary<int, List<TradingLogEntry>>();
         }
 
         public bool IsInitialized(Faction f)
@@ -606,12 +631,18 @@ namespace EconomicsDemography
         
         public VirtualStockpile GetStockpile(Faction f)
         {
-            if (!factionStockpiles.ContainsKey(f.loadID))
+            if (f == null || f.loadID < 0) return null;
+            int fid = f.loadID;
+            if (!factionStockpiles.ContainsKey(fid))
             {
-                factionStockpiles[f.loadID] = new VirtualStockpile();
-                GenerateStartingStock(f, factionStockpiles[f.loadID]);
+                factionStockpiles[fid] = new VirtualStockpile();
+                GenerateStartingStock(f, factionStockpiles[fid]);
             }
-            return factionStockpiles[f.loadID];
+            
+            // Гарантируем привязку ID для логов
+            factionStockpiles[fid].factionID = fid;
+            
+            return factionStockpiles[fid];
         }
 
         private void GenerateStartingStock(Faction f, VirtualStockpile stock)

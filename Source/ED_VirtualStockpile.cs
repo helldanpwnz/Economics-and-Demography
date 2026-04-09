@@ -19,6 +19,12 @@ namespace EconomicsDemography
         public int silver = 1000;
         public int maxSlots = 100;
         public bool isWarrior = false;
+        public int factionID = -1; // Привязка к фракции для логов
+
+        // Поля кэширования (не сохраняются)
+        private float cachedWealth = -1f;
+        private int lastWealthTick = -1;
+        private static Dictionary<string, (ThingDef def, int quality)> parsedCache = new Dictionary<string, (ThingDef, int)>();
 
         public void ExposeData()
         {
@@ -26,6 +32,7 @@ namespace EconomicsDemography
             Scribe_Values.Look(ref silver, "silver", 1000);
             Scribe_Values.Look(ref maxSlots, "maxSlots", 50);
             Scribe_Values.Look(ref isWarrior, "isWarrior", false);
+            Scribe_Values.Look(ref factionID, "factionID", -1);
         }
 
         public void AddItem(ThingDef def, int count, int quality = -1)
@@ -71,6 +78,7 @@ namespace EconomicsDemography
             // 4. ЗАПИСЬ (БЕЗ ЛИМИТОВ)
             if (!inventory.ContainsKey(name)) inventory[name] = 0;
             inventory[name] += count;
+            cachedWealth = -1f; // Инвалидируем кэш богатства
 
             // Удаляем из словаря, если количество ушло в ноль или минус
         }
@@ -93,22 +101,34 @@ namespace EconomicsDemography
         // === ГЛАВНАЯ ФИШКА: РАСЧЕТ БОГАТСТВА ===
         public float GetTotalWealth()
         {
+            if (cachedWealth >= 0 && Find.TickManager.TicksGame == lastWealthTick) return cachedWealth;
+
             float total = (float)silver; // 1 серебро = 1.0 стоимости
             
             foreach (var kvp in inventory)
             {
                 if (string.IsNullOrEmpty(kvp.Key)) continue;
-                ParseKey(kvp.Key, out string defName, out int q);
-                ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail(defName);
-                if (def == null) continue;
-                if (def.tradeTags == null) def.tradeTags = new List<string>();
-                if (def.thingCategories == null) def.thingCategories = new List<ThingCategoryDef>();
+                
+                if (!parsedCache.TryGetValue(kvp.Key, out var entry))
+                {
+                    ParseKey(kvp.Key, out string dName, out int q);
+                    ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(dName);
+                    entry = (d, q);
+                    parsedCache[kvp.Key] = entry;
+                }
+
+                if (entry.def == null) continue;
                 
                 // BaseMarketValue - базовая цена предмета * коэффициент качества
-                total += def.BaseMarketValue * GetQualityMultiplier(q) * kvp.Value;
+                total += entry.def.BaseMarketValue * GetQualityMultiplier(entry.quality) * kvp.Value;
             }
+
+            cachedWealth = total;
+            lastWealthTick = Find.TickManager.TicksGame;
             return total;
         }
+
+        public void SetWealthDirty() { cachedWealth = -1f; }
 
         // Добавили аргумент Dictionary с модификаторами цен
         public bool TryConsumeWealth(float valueNeeded, Dictionary<ThingDef, float> priceModifiers, bool isMilitary = false)
@@ -149,7 +169,8 @@ namespace EconomicsDemography
                     };
                 })
                 .Where(x => x.Def != null)
-                .OrderBy(x => isMilitary ? x.MilSort : 0) // Если война - сортируем по типам предметов
+                .OrderBy(x => (x.Def.stackLimit > 1 && inventory[x.Key] < x.Def.stackLimit * 5) ? 0 : 1) // Сначала дробные остатки
+                .ThenBy(x => isMilitary ? x.MilSort : 0) // Если война - сортируем по типам предметов
                 .ThenBy(x => x.Mult) // Всегда от дешевых (хлам) к дорогим
                 .ToList();
 
@@ -167,6 +188,10 @@ namespace EconomicsDemography
                     int silverToTake = Mathf.Min(silver, Mathf.CeilToInt(remainingNeed));
                     silver -= silverToTake;
                     remainingNeed -= silverToTake;
+                    
+                    // Логируем расход серебра
+                    if (factionID != -1 && WorldPopulationManager.Instance != null)
+                        TradingHistoryManager.AddLog(WorldPopulationManager.Instance.consumeLogs, factionID, new TradingLogEntry(Find.TickManager.TicksGame, "Silver", silverToTake, silverToTake));
                 }
             }
             else if (deflationCrisis)
@@ -184,6 +209,10 @@ namespace EconomicsDemography
                     int silverToTake = Mathf.Min(silver, Mathf.CeilToInt(remainingNeed));
                     silver -= silverToTake;
                     remainingNeed -= silverToTake;
+
+                    // Логируем расход серебра
+                    if (factionID != -1 && WorldPopulationManager.Instance != null)
+                        TradingHistoryManager.AddLog(WorldPopulationManager.Instance.consumeLogs, factionID, new TradingLogEntry(Find.TickManager.TicksGame, "Silver", silverToTake, silverToTake));
                 }
             }
             else
@@ -200,6 +229,10 @@ namespace EconomicsDemography
                     int silverToTake = Mathf.Min(silver, Mathf.CeilToInt(remainingNeed));
                     silver -= silverToTake;
                     remainingNeed -= silverToTake;
+
+                    // Логируем расход серебра
+                    if (factionID != -1 && WorldPopulationManager.Instance != null)
+                        TradingHistoryManager.AddLog(WorldPopulationManager.Instance.consumeLogs, factionID, new TradingLogEntry(Find.TickManager.TicksGame, "Silver", silverToTake, silverToTake));
                 }
 
                 var expensiveItems = itemsList.Where(x => x.Mult > 1.0f).ToList();
@@ -217,6 +250,10 @@ namespace EconomicsDemography
                 int silverToTake = Mathf.Min(silver, Mathf.CeilToInt(remainingNeed));
                 silver -= silverToTake;
                 remainingNeed -= silverToTake;
+
+                // Логируем расход серебра
+                if (factionID != -1 && WorldPopulationManager.Instance != null)
+                    TradingHistoryManager.AddLog(WorldPopulationManager.Instance.consumeLogs, factionID, new TradingLogEntry(Find.TickManager.TicksGame, "Silver", -silverToTake, -silverToTake));
             }
 
             // Если была инфляция, мы слили все серебро, но налог еще не закрыт - платим товарами в нужном объеме:
@@ -257,6 +294,11 @@ namespace EconomicsDemography
             float valueTaken = actualTake * price;
 
             if (inventory[key] <= 0) inventory.Remove(key);
+            cachedWealth = -1f;
+
+            // Логируем потребление предмета
+            if (factionID != -1 && WorldPopulationManager.Instance != null)
+                TradingHistoryManager.AddLog(WorldPopulationManager.Instance.consumeLogs, factionID, new TradingLogEntry(Find.TickManager.TicksGame, def.LabelCap, -actualTake, -valueTaken));
             
             return need - valueTaken;
         }
@@ -284,11 +326,12 @@ namespace EconomicsDemography
             return false; // Товаров нет
         }
 
-        public List<Thing> GenerateRealThings(TraderKindDef traderKind, bool isBaseTrade)
+        public List<Thing> GenerateRealThings(TraderKindDef traderKind, bool isBaseTrade, float maxMass = 9999999f)
         {
             List<Thing> things = new List<Thing>();
+            float currentMass = 0f;
 
-            // 1. СЕРЕБРО
+            // 1. СЕРЕБРО (Почти не весит, берем первым)
             int silverToTake = isBaseTrade ? silver : Mathf.Max(500, Mathf.CeilToInt(silver * 0.2f));
             silverToTake = Mathf.Min(silverToTake, silver);
             if (silverToTake > 0)
@@ -297,37 +340,50 @@ namespace EconomicsDemography
                 Thing s = ThingMaker.MakeThing(ThingDefOf.Silver);
                 s.stackCount = silverToTake;
                 things.Add(s);
+                currentMass += s.GetStatValue(StatDefOf.Mass) * s.stackCount;
             }
 
             // 2. ТОВАРЫ
             foreach (var kvp in inventory.ToList())
             {
                 if (kvp.Value <= 0) continue;
-                ParseKey(kvp.Key, out string defName, out int storedQuality);
+                if (currentMass >= maxMass) break; // СТОП: Перегруз
 
+                ParseKey(kvp.Key, out string defName, out int storedQuality);
                 ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail(defName);
                 
                 // Исключаем Xenogerm и Genepack (Biotech), так как они требуют генного набора и ломают CanStackTogether
                 if (def == null || def.category == ThingCategory.Pawn || def.defName == "Xenogerm" || def.defName == "Genepack") continue;
-
-                if (def.tradeTags == null) def.tradeTags = new List<string>();
-                if (def.thingCategories == null) def.thingCategories = new List<ThingCategoryDef>();
-
+                
                 bool allowed = isBaseTrade || (traderKind != null && traderKind.WillTrade(def));
-
                 if (allowed)
                 {
                     try 
                     {
-                        // 1. ЗАЩИТА ОТ КРАША: Если вещь должна иметь материал, но его нет — даем Сталь.
-                        ThingDef stuff = def.MadeFromStuff ? (GenStuff.DefaultStuffFor(def) ?? ThingDefOf.Steel) : null;
+                        float massPerUnit = Mathf.Max(0.01f, def.BaseMass);
                         int countToTake = isBaseTrade ? kvp.Value : Mathf.Max(1, (int)(kvp.Value * 0.2f));
+                        
+                        if (!isBaseTrade && def.stackLimit > 1)
+                        {
+                            // Если это хлам (< 5 стаков), выставляем всё на продажу, чтобы очистить склад.
+                            if (kvp.Value < def.stackLimit * 5) countToTake = kvp.Value;
+                            // Иначе - минимум 5 стаков на продажу (Крупный ОПТ).
+                            else countToTake = Mathf.Max(countToTake, def.stackLimit * 5);
+                        }
+
                         // Броне-наценка: разрешаем торговцу брать до 5 единиц, даже если 20% меньше этого.
                         if (!isBaseTrade && def.stackLimit == 1) countToTake = Mathf.Max(countToTake, Rand.RangeInclusive(1, 10));
+                        
+                        // Проверка вместимости
+                        int canFit = Mathf.FloorToInt((maxMass - currentMass) / massPerUnit);
+                        if (canFit <= 0) continue;
+                        
+                        countToTake = Mathf.Min(countToTake, canFit);
                         countToTake = Mathf.Min(countToTake, kvp.Value);
 
                         if (countToTake > 0)
                         {
+                            ThingDef stuff = def.MadeFromStuff ? (GenStuff.DefaultStuffFor(def) ?? ThingDefOf.Steel) : null;
                             // 2. УНИКАЛЬНЫЕ ВЕЩИ (Книги, Арт, Оружие)
                             if (def.stackLimit == 1 || def.HasComp(typeof(CompQuality)) || typeof(Book).IsAssignableFrom(def.thingClass))
                             {
@@ -362,9 +418,11 @@ namespace EconomicsDemography
 
                                             // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА
                                             _ = t.LabelCap;
+                                         _ = t.LabelCap;
                                             _ = t.DescriptionDetailed;
 
                                             things.Add(t);
+                                            currentMass += t.GetStatValue(StatDefOf.Mass);
                                         } 
                                         catch (Exception ex)
                                         {
@@ -372,6 +430,7 @@ namespace EconomicsDemography
                                             t = ThingMaker.MakeThing(ThingDefOf.Silver);
                                             t.stackCount = Mathf.Clamp(Mathf.RoundToInt(def.BaseMarketValue), 1, 500);
                                             things.Add(t);
+                                            currentMass += t.GetStatValue(StatDefOf.Mass) * t.stackCount;
                                         }
                                     }
                                 }
@@ -388,12 +447,14 @@ namespace EconomicsDemography
                                         // Проверка безопасности
                                         _ = t.LabelCap;
                                         things.Add(t);
+                                        currentMass += t.GetStatValue(StatDefOf.Mass) * t.stackCount;
                                     }
                                     catch 
                                     {
                                         Thing s = ThingMaker.MakeThing(ThingDefOf.Silver);
                                         s.stackCount = countToTake; 
                                         things.Add(s);
+                                        currentMass += s.GetStatValue(StatDefOf.Mass) * s.stackCount;
                                     }
                                 }
                             }
@@ -408,7 +469,7 @@ namespace EconomicsDemography
                 things.RemoveAll(x => x == null);
 
                 // 3. ПРИНУДИТЕЛЬНОЕ РАЗНООБРАЗИЕ (Variety Force) - Если товаров мало, дозакупаем за серебро фракции
-                if (!isBaseTrade && traderKind != null && things.Count < 40 && silver > 200)
+                if (!isBaseTrade && traderKind != null && things.Count < 40 && silver > 200 && currentMass < maxMass)
                 {
                     var manager = WorldPopulationManager.Instance;
                     if (manager != null)
@@ -426,10 +487,16 @@ namespace EconomicsDemography
 
                         foreach (ThingDef d in possible)
                         {
-                            if (things.Count >= 55 || spent >= maxSpend) break;
+                            if (things.Count >= 55 || spent >= maxSpend || currentMass >= maxMass) break;
                             try 
                             {
-                                int buyCount = d.stackLimit > 1 ? Rand.Range(15, 45) : 1;
+                                float mPerUnit = Mathf.Max(0.01f, d.BaseMass);
+                                int buyCount = d.stackLimit > 1 ? d.stackLimit * 5 : 1;
+                                
+                                int canFitFiller = Mathf.FloorToInt((maxMass - currentMass) / mPerUnit);
+                                if (canFitFiller <= 0) continue;
+                                buyCount = Mathf.Min(buyCount, canFitFiller);
+
                                 float cost = d.BaseMarketValue * buyCount;
                                 if (spent + cost > maxSpend) continue;
 
@@ -441,6 +508,7 @@ namespace EconomicsDemography
                                 if (qc != null) qc.SetQuality(GenerateRandomQuality(d), ArtGenerationContext.Outsider);
 
                                 things.Add(t);
+                                currentMass += t.GetStatValue(StatDefOf.Mass) * t.stackCount;
                                 spent += Mathf.CeilToInt(cost);
                             } catch { }
                         }
@@ -528,7 +596,7 @@ namespace EconomicsDemography
                     // 4. Расчет стоимости
                     float price = d.BaseMarketValue * GetQualityMultiplier(q);
                     
-                    int amount = d.stackLimit > 1 ? Rand.Range(5, 15) : 1;
+                    int amount = d.stackLimit > 1 ? d.stackLimit * 5 : 1;
                     
                     if (seller.inventory.TryGetValue(key, out int sellerHas))
                     {

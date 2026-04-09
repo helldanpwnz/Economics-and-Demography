@@ -170,4 +170,15 @@
   <ED_Log_EconomyPathChosenBulk>[E&amp;D Экономика] Массовое назначение {0}: выбран путь {1}</ED_Log_EconomyPathChosenBulk>
   <ED_Log_ItemGenerationError>[E&amp;D] Ошибка генерации предмета {0}: {1}. Замена на серебро.</ED_Log_ItemGenerationError>
   <ED_Log_ItemProcessError>[E&amp;D] Не удалось создать или обработать предмет {0}: {1}</ED_Log_ItemProcessError>
+
+  <!-- Trading History -->
+  <ED_TradingHistory_Button>История экономики</ED_TradingHistory_Button>
+  <ED_TradingHistory_Desc>Просмотреть историю производства и торговли этой фракции за последние 30 циклов.</ED_TradingHistory_Desc>
+  <ED_TradingHistory_Title>История экономики: {0}</ED_TradingHistory_Title>
+  <ED_History_Consumption>Потребление</ED_History_Consumption>
+  <ED_History_Production>Производство</ED_History_Production>
+  <ED_History_Sales>Продажи</ED_History_Sales>
+  <ED_History_Purchases>Покупки</ED_History_Purchases>
+  <ED_History_Loot>Сбор лута</ED_History_Loot>
+  <ED_History_Theft>Воровство</ED_History_Theft>
 </LanguageData>

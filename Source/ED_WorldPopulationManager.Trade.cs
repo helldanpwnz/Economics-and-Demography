@@ -57,6 +57,11 @@ namespace EconomicsDemography
                         if (victimStock.inventory[targetKey] <= 0) victimStock.inventory.Remove(targetKey);
                         actorStock.AddItem(itemDef, amountToSteal, q1);
                         Log.Message("ED_Log_Raid".Translate(actor.Name, amountToSteal, itemDef.label, victim.Name));
+                        
+                        // Логируем воровство в историю обеих сторон (теперь в stealLogs)
+                        float theftVal = itemDef.BaseMarketValue * VirtualStockpile.GetQualityMultiplier(q1) * amountToSteal;
+                        TradingHistoryManager.AddLog(stealLogs, actor.loadID, new TradingLogEntry(Find.TickManager.TicksGame, itemDef.LabelCap, amountToSteal, theftVal, victim.loadID));
+                        TradingHistoryManager.AddLog(stealLogs, victim.loadID, new TradingLogEntry(Find.TickManager.TicksGame, itemDef.LabelCap, -amountToSteal, -theftVal, actor.loadID));
                     }
                 }
                 else
@@ -103,8 +108,18 @@ namespace EconomicsDemography
                     float buyPrice = partner.def.permanentEnemy ? (baseValue * 2.0f) : baseValue;
                     float finalUnitPrice = (sellPrice + buyPrice) / 2f;
 
-                    float sellRange = Rand.Range(0.1f, 0.3f);
-                    int amountA = Mathf.Max(1, Mathf.CeilToInt(actorStock.inventory[keyA] * sellRange));
+                    int currentHasA = actorStock.inventory[keyA];
+                    int amountA = Mathf.CeilToInt(currentHasA * Rand.Range(0.1f, 0.3f));
+                    
+                    if (defA.stackLimit > 1)
+                    {
+                        // Если это "хлам" (< 5 стаков), продаем весь остаток целиком одним лотом
+                        if (currentHasA < defA.stackLimit * 5) amountA = currentHasA;
+                        // Иначе продаем минимум 5 полных стаков (Крупный ОПТ)
+                        else amountA = Mathf.Max(amountA, defA.stackLimit * 5);
+                    }
+                    amountA = Mathf.Min(amountA, currentHasA);
+                    
                     float totalDealValue = amountA * finalUnitPrice;
 
                     bool actorIsLower = actor.def.techLevel < partner.def.techLevel;
@@ -124,6 +139,10 @@ namespace EconomicsDemography
                         actorStock.silver += Mathf.RoundToInt(totalDealValue);
                         
                         Log.Message("ED_Log_Export".Translate(actor.Name, actor.def.techLevel.ToString(), partner.Name, totalDealValue.ToString("F0")));
+                        
+                        // Логируем экспорт и покупку
+                        TradingHistoryManager.AddLog(saleLogs, actor.loadID, new TradingLogEntry(Find.TickManager.TicksGame, defA.LabelCap, amountA, totalDealValue, partner.loadID));
+                        TradingHistoryManager.AddLog(buyLogs, partner.loadID, new TradingLogEntry(Find.TickManager.TicksGame, defA.LabelCap, amountA, totalDealValue, actor.loadID));
                     }
                     else if (!actorIsLower && !needsMoney) // БАРТЕР ЗАПРЕЩЕН, ПРИ НЕХВАТКЕ СЕРЕБРА (нужно накопление)
                     {
@@ -151,9 +170,18 @@ namespace EconomicsDemography
                         
                         if (defB == null || (isMilitary && defB.IsWeapon)) continue;
 
-                        int amountB = Mathf.Max(1, Mathf.RoundToInt(totalDealValue / defB.BaseMarketValue));
+                        int amountB = Mathf.RoundToInt(totalDealValue / Mathf.Max(0.1f, defB.BaseMarketValue));
+                        int currentHasB = partnerStock.inventory[keyB];
 
-                        if (partnerStock.inventory.TryGetValue(keyB, out int pHas) && pHas >= amountB)
+                        if (defB.stackLimit > 1)
+                        {
+                            // Если у партнера этого мало, он отдает всё. Иначе - минимум 5 стаков.
+                            if (currentHasB < defB.stackLimit * 5) amountB = currentHasB;
+                            else amountB = Mathf.Max(amountB, defB.stackLimit * 5);
+                        }
+                        amountB = Mathf.Min(amountB, currentHasB);
+
+                        if (currentHasB >= amountB && amountB > 0)
                         {
                             actorStock.inventory[keyA] -= amountA;
                             if (actorStock.inventory[keyA] <= 0) actorStock.inventory.Remove(keyA);
@@ -164,6 +192,13 @@ namespace EconomicsDemography
                             partnerStock.AddItem(defA, amountA, qA);
                             actorStock.AddItem(defB, amountB, qB);
                             Log.Message("ED_Log_Barter".Translate(actor.Name, partner.Name, defA.label, defB.label));
+
+                            // Логируем бартерную сделку (Обе стороны: продажа одного и покупка другого)
+                            float valB = amountB * defB.BaseMarketValue * VirtualStockpile.GetQualityMultiplier(qB);
+                            TradingHistoryManager.AddLog(saleLogs, actor.loadID, new TradingLogEntry(Find.TickManager.TicksGame, defA.LabelCap, amountA, totalDealValue, partner.loadID));
+                            TradingHistoryManager.AddLog(buyLogs, partner.loadID, new TradingLogEntry(Find.TickManager.TicksGame, defA.LabelCap, amountA, totalDealValue, actor.loadID));
+                             TradingHistoryManager.AddLog(buyLogs, actor.loadID, new TradingLogEntry(Find.TickManager.TicksGame, defB.LabelCap, amountB, valB, partner.loadID));
+                             TradingHistoryManager.AddLog(saleLogs, partner.loadID, new TradingLogEntry(Find.TickManager.TicksGame, defB.LabelCap, amountB, valB, actor.loadID));
                         }
                     }
                 }

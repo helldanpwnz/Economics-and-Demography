@@ -170,4 +170,15 @@
   <ED_Log_EconomyPathChosenBulk>[E&amp;D Economy] Bulk assignment for {0}: path chosen: {1}</ED_Log_EconomyPathChosenBulk>
   <ED_Log_ItemGenerationError>[E&amp;D] Error generating item {0}: {1}. Replaced with silver.</ED_Log_ItemGenerationError>
   <ED_Log_ItemProcessError>[E&amp;D] Failed to create or process item {0}: {1}</ED_Log_ItemProcessError>
+
+  <!-- Trading History -->
+  <ED_TradingHistory_Button>Economy History</ED_TradingHistory_Button>
+  <ED_TradingHistory_Desc>View production and trade history of this faction for the last 30 cycles.</ED_TradingHistory_Desc>
+  <ED_TradingHistory_Title>Economy History: {0}</ED_TradingHistory_Title>
+  <ED_History_Consumption>Consumption</ED_History_Consumption>
+  <ED_History_Production>Production</ED_History_Production>
+  <ED_History_Sales>Sales</ED_History_Sales>
+  <ED_History_Purchases>Purchases</ED_History_Purchases>
+  <ED_History_Loot>Loot Recovery</ED_History_Loot>
+  <ED_History_Theft>Virtual Theft</ED_History_Theft>
 </LanguageData>

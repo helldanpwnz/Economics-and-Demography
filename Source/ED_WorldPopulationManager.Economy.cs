@@ -276,6 +276,8 @@ public override void WorldComponentTick()
 
         public void RecalculateGlobalPrices()
         {
+            EnsureGoodsCached();
+            
             foreach (Faction f in Find.FactionManager.AllFactions)
             {
                 if (IsSimulatedFaction(f))
@@ -338,8 +340,9 @@ public override void WorldComponentTick()
                 if (kvp.Value == null || kvp.Value.inventory == null) continue;
                 foreach (var item in kvp.Value.inventory)
                 {
-                    if (!totalWorldStock.ContainsKey(item.Key)) totalWorldStock[item.Key] = 0;
-                    totalWorldStock[item.Key] += item.Value;
+                    VirtualStockpile.ParseKey(item.Key, out string dName, out _);
+                    if (!totalWorldStock.ContainsKey(dName)) totalWorldStock[dName] = 0;
+                    totalWorldStock[dName] += item.Value;
                 }
             }
 
@@ -399,24 +402,13 @@ public override void WorldComponentTick()
             {
                 Map map = maps[i];
                 
-                List<Thing> items = map.listerThings.ThingsInGroup(ThingRequestGroup.HaulableAlways);
-                int count = items.Count;
-                
-                for (int j = 0; j < count; j++)
+                // Оптимизация: Используем счетчик ресурсов карты вместо перебора всех вещей
+                var counts = map.resourceCounter.AllCountedAmounts;
+                foreach (var kvp in counts)
                 {
-                    Thing t = items[j];
-                    if (t.def.category == ThingCategory.Item && !t.def.Minifiable)
-                    {
-                        string name = t.def.defName;
-                        if (cachedPlayerAssets.TryGetValue(name, out int val))
-                        {
-                            cachedPlayerAssets[name] = val + t.stackCount;
-                        }
-                        else
-                        {
-                            cachedPlayerAssets[name] = t.stackCount;
-                        }
-                    }
+                    if (kvp.Key == null || kvp.Key.Minifiable) continue;
+                    string name = kvp.Key.defName;
+                    cachedPlayerAssets[name] = (cachedPlayerAssets.TryGetValue(name, out int v) ? v : 0) + kvp.Value;
                 }
             }
 
@@ -428,17 +420,10 @@ public override void WorldComponentTick()
                 {
                     foreach (Thing t in car.AllThings)
                     {
-                        if (t.def.category == ThingCategory.Item && !t.def.Minifiable)
+                        if (t != null && t.def.category == ThingCategory.Item && !t.def.Minifiable)
                         {
                             string name = t.def.defName;
-                            if (cachedPlayerAssets.TryGetValue(name, out int val))
-                            {
-                                cachedPlayerAssets[name] = val + t.stackCount;
-                            }
-                            else
-                            {
-                                cachedPlayerAssets[name] = t.stackCount;
-                            }
+                            cachedPlayerAssets[name] = (cachedPlayerAssets.TryGetValue(name, out int v) ? v : 0) + t.stackCount;
                         }
                     }
                 }

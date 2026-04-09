@@ -357,6 +357,18 @@ namespace EconomicsDemography
             VirtualStockpile stock = GetStockpile(f);
             if (stock == null) return;
 
+            // Оптимизация: Агрегируем инвентарь один раз на весь метод
+            Dictionary<ThingDef, int> itemCountsAggregated = new Dictionary<ThingDef, int>();
+            foreach (var kvp in stock.inventory)
+            {
+                VirtualStockpile.ParseKey(kvp.Key, out string dName, out _);
+                ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(dName);
+                if (d != null)
+                {
+                    itemCountsAggregated[d] = (itemCountsAggregated.TryGetValue(d, out int val) ? val : 0) + kvp.Value;
+                }
+            }
+
             float techMult = 1.0f;
             switch (f.def.techLevel)
             {
@@ -464,11 +476,18 @@ namespace EconomicsDemography
                     return currentLines.Count(x => GetGroup(x) == group) < 5;
                 }
 
-                bool IsSaturatedLocal(ThingDef d) => stock.GetCount(d) >= (totalLiving * 15);
+                bool IsSaturatedLocal(ThingDef d) => (itemCountsAggregated.TryGetValue(d, out int c) ? c : 0) >= (totalLiving * 15);
 
                 bool needRefresh = !monthlyProductionPlans.ContainsKey(fid) || Find.TickManager.TicksGame % 60000 == 0;
                 if (needRefresh)
                 {
+                    // Используем уже посчитанные агрегаты
+                    Dictionary<string, int> catTotals = new Dictionary<string, int> { {"Meat", 0}, {"Textile", 0}, {"Meds", 0}, {"Weapon", 0}, {"Apparel", 0}, {"Food", 0}, {"Other", 0} };
+                    foreach (var kvp in itemCountsAggregated)
+                    {
+                        catTotals[GetGroup(kvp.Key)] += kvp.Value;
+                    }
+
                     string trait1 = factionTraits.TryGetValue(fid, out string t1) ? t1 : "Generalist";
                     var weightedItems = potentialGoods.Select(d => new { Def = d, Weight = GetWeightForDef(d, trait1) }).ToList();
                     var staples = weightedItems.Where(x => x.Weight >= 800f).InRandomOrder().Select(x => x.Def.defName).ToList();
@@ -540,6 +559,15 @@ namespace EconomicsDemography
                     if (!productionProgress.ContainsKey(fid)) productionProgress[fid] = new FactionProductionProgress();
                     var myProgress = productionProgress[fid].progress; 
 
+                    // Используем уже посчитанные агрегаты
+                    Dictionary<string, int> catTotals = new Dictionary<string, int> { {"Meat", 0}, {"Textile", 0}, {"Meds", 0}, {"Weapon", 0}, {"Apparel", 0}, {"Food", 0}, {"Other", 0} };
+                    int totalInvItems = 0;
+                    foreach (var kvp in itemCountsAggregated)
+                    {
+                        catTotals[GetGroup(kvp.Key)] += kvp.Value;
+                        totalInvItems += kvp.Value;
+                    }
+
                     foreach (ThingDef good in activeLines)
                     {
                         if (remainingProductionValue <= 0) break;
@@ -553,30 +581,10 @@ namespace EconomicsDemography
                         if (globalModifier > 1.1f) slotBudget *= globalModifier;
                         else if (globalModifier < 0.9f) slotBudget *= globalModifier;
 
-                        float totalInvItems = stock.inventory.Values.Sum();
                         if (totalInvItems > 50) 
                         {
-                            string myCat = "Other";
-                            if (good.IsIngestible) myCat = "Food";
-                            else if (good.IsWeapon) myCat = "Weapon";
-                            else if (good.IsApparel) myCat = "Apparel";
-                            else if (good.IsMedicine) myCat = "Medicine";
-
-                            int catTotal = 0;
-                            foreach (var kvp in stock.inventory)
-                            {
-                                string dName; int q;
-                                VirtualStockpile.ParseKey(kvp.Key, out dName, out q);
-                                ThingDef d = DefDatabase<ThingDef>.GetNamedSilentFail(dName);
-                                if (d == null) continue;
-                                
-                                string dCat = "Other";
-                                if (d.IsIngestible) dCat = "Food";
-                                else if (d.IsWeapon) dCat = "Weapon";
-                                else if (d.IsApparel) dCat = "Apparel";
-                                else if (d.IsMedicine) dCat = "Medicine";
-                                if (dCat == myCat) catTotal += kvp.Value;
-                            }
+                            string myCat = GetGroup(good);
+                            int catTotal = catTotals[myCat];
 
                             float catRatio = (float)catTotal / totalInvItems;
                             if (globalModifier <= 1.2f)
@@ -594,8 +602,15 @@ namespace EconomicsDemography
                         if (myProgress[good.defName] >= actualMarketPrice)
                         {
                             int countToMake = Mathf.FloorToInt(myProgress[good.defName] / actualMarketPrice);
+                            
+                            // ПРАВИЛО 5 СТАКОВ: Производим только крупными партиями, чтобы не спамить единичками.
+                            // Если склад маленький, ждем заполнения всего оставшегося места.
+                            int hasCount = itemCountsAggregated.ContainsKey(good) ? itemCountsAggregated[good] : 0;
                             float storageLimitMult = Mathf.Clamp(globalModifier, 1.0f, 10.0f);
-                            int roomLeft = Mathf.RoundToInt(totalLiving * 3.0f * storageLimitMult) - stock.GetCount(good);
+                            int roomLeft = Mathf.RoundToInt(totalLiving * 3.0f * storageLimitMult) - hasCount;
+                            
+                            int minBatch = (good.stackLimit > 1) ? Mathf.Min(good.stackLimit * 5, roomLeft) : 1;
+                            if (countToMake < minBatch || countToMake <= 0) continue;
                             
                             if (roomLeft > 0)
                             {
@@ -603,6 +618,16 @@ namespace EconomicsDemography
                                 int q = -1;
                                 if (good.HasComp(typeof(CompQuality))) q = (int)stock.GenerateRandomQuality(good);
                                 stock.AddItem(good, finalCount, q);
+
+                                // Логируем производство в историю
+                                float batchVal = good.BaseMarketValue * VirtualStockpile.GetQualityMultiplier(q) * finalCount;
+                                TradingHistoryManager.AddLog(prodLogs, f.loadID, new TradingLogEntry(Find.TickManager.TicksGame, good.LabelCap, finalCount, batchVal));
+                                
+                                // Обновляем локальный кэш
+                                itemCountsAggregated[good] = hasCount + finalCount;
+                                catTotals[GetGroup(good)] += finalCount;
+                                totalInvItems += finalCount;
+
                                 myProgress[good.defName] -= (finalCount * actualMarketPrice);
                                 remainingProductionValue -= (finalCount * actualMarketPrice);
                             }
