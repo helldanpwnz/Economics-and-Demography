@@ -182,4 +182,8 @@
   <ED_History_Purchases>Покупки</ED_History_Purchases>
   <ED_History_Loot>Сбор лута</ED_History_Loot>
   <ED_History_Theft>Воровство</ED_History_Theft>
+
+  <ED_Log_ImperialTaxesCollected>[E&amp;D Экономика] Империя собрала {0} серебра в качестве ежегодных налогов со всего мира.</ED_Log_ImperialTaxesCollected>
+  <ED_ImperialTaxesTitle>Имперские налоги</ED_ImperialTaxesTitle>
+  <ED_ImperialTaxesText>Расколотая Империя собрала ежегодные налоги. Всего со всех фракций и поселений получено {0} серебра.</ED_ImperialTaxesText>
 </LanguageData>

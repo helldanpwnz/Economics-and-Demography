@@ -22,6 +22,7 @@ namespace EconomicsDemography
         public Dictionary<int, int> factionPopulation = new Dictionary<int, int>(); // Взрослые (боеспособные)
         public Dictionary<int, VirtualStockpile> factionStockpiles = new Dictionary<int, VirtualStockpile>();
         public Dictionary<int, int> lastRestockTick = new Dictionary<int, int>();
+        public int lastTaxTick = 0;
         public Dictionary<int, int> lastBaseCount = new Dictionary<int, int>();
         
         // История торговли (новое)
@@ -100,6 +101,7 @@ namespace EconomicsDemography
             Scribe_Collections.Look(ref knownFactionIDs, "knownFactionIDs", LookMode.Value);
             Scribe_Collections.Look(ref factionStockpiles, "factionStockpiles", LookMode.Value, LookMode.Deep);
             Scribe_Collections.Look(ref lastRestockTick, "lastRestockTick", LookMode.Value, LookMode.Value);
+            Scribe_Values.Look(ref lastTaxTick, "lastTaxTick", 0);
             Scribe_Values.Look(ref FactionWealth, "FactionWealth", 0f);
             Scribe_Collections.Look(ref productionProgress, "productionProgress", LookMode.Value, LookMode.Deep);
             Scribe_Collections.Look(ref factionLimitModifiers, "factionLimitModifiers", LookMode.Value, LookMode.Value);
@@ -130,6 +132,7 @@ namespace EconomicsDemography
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 if (factionTraits == null) factionTraits = new Dictionary<int, string>();
+                if (globalPriceModifiers == null) globalPriceModifiers = new Dictionary<ThingDef, float>();
                 
                 var keys = factionTraits.Keys.ToList();
                 foreach (var k in keys)
@@ -204,10 +207,14 @@ namespace EconomicsDemography
             if (raidLogs == null) raidLogs = new Dictionary<int, List<TradingLogEntry>>();
             if (stealLogs == null) stealLogs = new Dictionary<int, List<TradingLogEntry>>();
             if (consumeLogs == null) consumeLogs = new Dictionary<int, List<TradingLogEntry>>();
+            
+            // Общая защита от null
             if (globalPriceModifiers == null) globalPriceModifiers = new Dictionary<ThingDef, float>();
             if (rawResourcesCache == null) rawResourcesCache = new Dictionary<TechLevel, List<ThingDef>>();
             if (manufacturedCache == null) manufacturedCache = new Dictionary<TechLevel, List<ThingDef>>();
             if (foodCache == null) foodCache = new Dictionary<TechLevel, List<ThingDef>>();
+            
+            initializedSession = true;
         }
 
         public bool IsInitialized(Faction f)
@@ -219,6 +226,10 @@ namespace EconomicsDemography
         public bool IsSimulatedFaction(Faction f)
         {
             if (f == null || f.loadID < 0 || f.IsPlayer || f.def == null || f.defeated) return false;
+
+            // [EXCEPTION] Империя должна симулироваться всегда, даже если она hidden
+            if (f.def.defName == "Empire") return true;
+
             // Игнорируем скрытые и неписи-монстры (не-люди)
             if (f.def.hidden || (f.hidden == true) || !f.def.humanlikeFaction) return false;
             // Игнорируем временные и квестовые фракции

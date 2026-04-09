@@ -57,6 +57,16 @@ public override void WorldComponentTick()
     {
         RunMonthlyCleanup();
     }
+
+    // Сбор императорских налогов (раз в год - 60 дней)
+    // 60 дней * 60,000 тиков = 3,600,000 тиков
+    if (lastTaxTick == 0) lastTaxTick = currentTick;
+
+    if (currentTick > 0 && (currentTick - lastTaxTick) >= 3600000)
+    {
+        CollectImperialTaxes();
+        lastTaxTick = currentTick;
+    }
 }
 
         private void RunDailyTasks()
@@ -493,6 +503,45 @@ public override void WorldComponentTick()
                 }
             }
             return total;
+        }
+
+        private void CollectImperialTaxes()
+        {
+            Faction empire = Find.FactionManager.AllFactionsListForReading.FirstOrDefault(f => f.def.defName == "Empire");
+            
+            if (empire == null) {
+                Log.Error("[E&D TAX] ERROR: Empire faction (defName: Empire) NOT FOUND in this world!");
+                return;
+            }
+
+            VirtualStockpile empireStock = GetStockpile(empire);
+            float totalCollected = 0f;
+
+            foreach (var f in Find.FactionManager.AllFactionsListForReading)
+            {
+                if (f == empire) continue;
+                
+                bool sim = IsSimulatedFaction(f);
+                if (sim) {
+                    VirtualStockpile stock = GetStockpile(f);
+                    if (stock != null && stock.silver > 0) {
+                        int tax = Mathf.RoundToInt((float)stock.silver * 0.10f);
+                        if (tax > 0) {
+                            stock.silver -= tax;
+                            totalCollected += tax;
+                            // Логируем налог для фракции-плательщика
+                            TradingHistoryManager.AddLog(consumeLogs, f.loadID, new TradingLogEntry(Find.TickManager.TicksGame, "ED_Tax".Translate(), -1, -tax));
+                        }
+                    }
+                }
+            }
+
+            if (totalCollected > 0)
+            {
+                empireStock.silver += Mathf.RoundToInt(totalCollected);
+                // Логируем общий сбор для Империи
+                TradingHistoryManager.AddLog(prodLogs, empire.loadID, new TradingLogEntry(Find.TickManager.TicksGame, "ED_Tax".Translate(), 1, totalCollected));
+            }
         }
     }
 }

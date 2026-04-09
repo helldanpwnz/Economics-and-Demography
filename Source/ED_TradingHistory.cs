@@ -187,9 +187,9 @@ namespace EconomicsDemography
                     }
                 }
 
-                string color = entry.amount >= 0 ? "#00ff00" : "#ff4444";
+                string color = entry.value >= 0 ? "#00ff00" : "#ff4444";
                 string valStr = entry.value.ToString("F0") + "$";
-                if (entry.amount < 0 && !valStr.StartsWith("-")) valStr = "-" + valStr;
+                if (entry.value < 0 && !valStr.StartsWith("-")) valStr = "-" + valStr;
 
                 Widgets.Label(new Rect(0f, curY, viewRect.width * 0.7f, 40f), label);
                 Text.Anchor = TextAnchor.UpperRight;

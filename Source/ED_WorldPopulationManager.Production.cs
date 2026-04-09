@@ -399,6 +399,14 @@ namespace EconomicsDemography
 
             float inflationBonus = (this.currentInflation > 1.0f) ? this.currentInflation : 1.0f;
             float baseProductionValue = laborForce * Rand.Range(0.60f, 1.00f) * techMult * efficiencyScale * techProdMult;
+
+            // [EXCEPTION] Специальный бонус для Империи (DLC Royalty)
+            // Увеличиваем производственную мощность в 3 раза, так как это технологически продвинутые колонизаторы
+            if (f.def.defName == "Empire")
+            {
+                baseProductionValue *= 2.0f;
+            }
+
             float marketProductionValue = baseProductionValue * inflationBonus;
                     
             float currentTotalWealth = stock.GetTotalWealth();

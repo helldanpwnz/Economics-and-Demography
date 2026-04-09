@@ -182,4 +182,8 @@
   <ED_History_Purchases>Purchases</ED_History_Purchases>
   <ED_History_Loot>Loot Recovery</ED_History_Loot>
   <ED_History_Theft>Virtual Theft</ED_History_Theft>
+  
+  <ED_Log_ImperialTaxesCollected>[E&amp;D Economy] The Empire collected {0} silver in yearly taxes from across the world.</ED_Log_ImperialTaxesCollected>
+  <ED_ImperialTaxesTitle>Imperial Taxes</ED_ImperialTaxesTitle>
+  <ED_ImperialTaxesText>The Shattered Empire has collected its yearly taxes. Total amount gathered from all factions and settlements: {0} silver.</ED_ImperialTaxesText>
 </LanguageData>
